@@ -45,7 +45,7 @@ struct ViewParameters {
   float flightInitialFov;
 
   // Viewport position and size as fractions of the full window, in [0,1].
-  // posX/posY is the bottom-left corner (y=0 at bottom, i.e. openGL convention).
+  // posX/posY is the top-left corner (y=0 at the top, like screen coords).
   float viewportRelativePosX;
   float viewportRelativePosY;
   float viewportRelativeWidth;
@@ -53,8 +53,8 @@ struct ViewParameters {
 
   // Computed viewport geometry derived from the relative values above.
   // See note in view.h for the distinction of bufferIndices vs screenCoords.
-  int viewportPosX;         // bottom-left corner of the viewport in buffer inds (integer pixel inds)
-  int viewportPosY;         // bottom-left corner of the viewport in buffer inds (integer pixel inds, y-from-bottom)
+  int viewportPosX;         // top-left corner of the viewport in buffer inds (integer pixel inds)
+  int viewportPosY;         // (y=0 at the top, like buffer inds everywhere else. OpenGL calls flip this as needed)
   int viewportBufferWidth;  // viewport dimensions in buffer inds (integer buffer pixels)
   int viewportBufferHeight; // viewport dimensions in buffer inds (integer buffer pixels)
   int viewportWindowWidth;  // viewport dimensions in screenCoords (floats, as in ImGui etc)

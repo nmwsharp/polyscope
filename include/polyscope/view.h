@@ -174,10 +174,20 @@ bool getWindowResizable();
 // If using viewports, whenever not specified, all functions apply to the current
 // active viewport.
 
-// Get world geometry corresponding to a screen pixel (e.g. from a mouse click)
-glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords, int32_t viewportInd = -1);
-glm::vec3 bufferIndsToWorldRay(glm::ivec2 bufferInds, int32_t viewportInd = -1);
-glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth, int32_t viewportInd = -1);
+// Get world geometry corresponding to a screen pixel (e.g. from a mouse click).
+//
+// These take GLOBAL coordinates on the whole window, like the position of an ImGui click, find the viewport which
+// contains them, and use the camera of that viewport. (See the coordinate note below for screenCoords vs bufferInds.)
+glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords);
+glm::vec3 bufferIndsToWorldRay(glm::ivec2 bufferInds);
+glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth);
+//
+// The viewport variants instead take coordinates LOCAL to the viewport viewportInd (the active viewport if -1), and
+// use the camera of that viewport.
+glm::vec3 viewportScreenCoordsToWorldRay(glm::vec2 screenCoords, int32_t viewportInd = -1);
+glm::vec3 viewportBufferIndsToWorldRay(glm::ivec2 bufferInds, int32_t viewportInd = -1);
+glm::vec3 viewportScreenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth,
+                                                      int32_t viewportInd = -1);
 
 // Get and set camera from json string
 std::string getViewAsJson();
@@ -190,43 +200,50 @@ void setCameraFromJson(std::string jsonData, bool flyTo);
 
 // === Coordinate system conventions ===
 //
-// Two coordinate systems are used throughout, and MUST NOT be mixed:
+// There are two kinds of 2D pixel coordinates. They differ ONLY by a scale factor, never by origin or direction:
 //
-//   Screen coords  (glm::vec2, float)   — logical pixels, y=0 at TOP,    y increases downward.
-//                                         Used by ImGui (io.MousePos), window/widget layout.
+//   Screen coords  (glm::vec2, float)   — logical pixels. Used by ImGui (io.MousePos), window/widget layout.
 //
-//   Buffer indices (glm::ivec2, int)    — physical pixels, y=0 at BOTTOM, y increases upward.
-//                                         Used by OpenGL framebuffers, ViewParameters::viewportPosY.
+//   Buffer indices (glm::ivec2, int)    — pixels of the render buffers. On high-DPI (e.g. MacOS Retina) displays each
+//                                         1.0 screen-coord unit spans multiple buffer pixels.
 //
-// High-DPI (e.g. MacOS Retina) machines have a scale factor >1: each 1.0 screen-coord unit spans multiple buffer
-// pixels. ViewParameters::viewportRelativePosY and viewportPosY are in BUFFER (y-from-bottom) convention. All functions
-// below state which convention their arguments and return values use.
+// BOTH have their origin at the TOP-LEFT, with y increasing DOWNWARD. This is the convention for everything in the
+// Polyscope API: view/pick functions, PickResult, viewport locations like ViewParameters::viewportRelativePosY and
+// viewportPosY, etc.
+//
+// When using viewports, coordinates are additionally expressed in one of two frames:
+//
+//   Global  — the origin is the top-left of the whole window.
+//   Local   — the origin is the top-left of one particular viewport.
+//
+// Functions below state which frame they use for arguments and return values; unless a name says "Viewport" or an
+// argument says "local", assume GLOBAL. A viewport covering the whole window has identical local and global coords.
 
-// Convert between buffer indices and screen coords (see definition above) for the full window.
-// When using viewports, these operate on global window coordinates, not viewport-local coordinates.
+// Convert between buffer indices and screen coords (see definition above), in the GLOBAL frame of the whole window.
 glm::vec2 bufferIndsToScreenCoords(int xPos, int yPos); // buffer → screen
 glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds);
 glm::ivec2 screenCoordsToBufferIndsVec(glm::vec2 screenCoords); // screen → buffer
 std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
 
-// Viewport-local versions of the above. Buffer indices and screen coords here are relative to the
-// viewport's own origin (not the global window). Pass viewportInd=-1 to use the current active viewport.
-// See note above for definition: buffer indices and screen coordinates have different scales and origins.
+// The same conversions as above, but both the inputs and outputs are in the LOCAL frame of the given viewport.
+// Pass viewportInd=-1 to use the current active viewport. (Local buffer indices are clamped to lie inside the viewport.)
 glm::vec2 bufferIndsToScreenCoordsViewport(int xPos, int yPos, int32_t viewportInd = -1);
 glm::vec2 bufferIndsToScreenCoordsViewport(glm::ivec2 bufferInds, int32_t viewportInd = -1);
 glm::ivec2 screenCoordsToBufferIndsVecViewport(glm::vec2 screenCoords, int32_t viewportInd = -1);
 std::tuple<int, int> screenCoordsToBufferIndsViewport(glm::vec2 screenCoords, int32_t viewportInd = -1);
 
-// Given screen coordinates / buffer inds on the whole window, determine which viewport they lie in.
+// Given GLOBAL screen coordinates / buffer inds, determine which viewport they lie in (the topmost one, if viewports
+// overlap).
 int32_t screenCoordsToViewportInd(glm::vec2 screenCoords);
 int32_t bufferIndsToViewportInd(glm::ivec2 bufferInds);
 
-// Given screen coordinates / buffer inds on the whole window, determine which viewport they lie in and the local
-// coordinates within that viewport. The return tuple is <localCoords, viewportIndex>
+// Given GLOBAL screen coordinates / buffer inds, determine which viewport they lie in, and the LOCAL coordinates within
+// that viewport. The return tuple is <localCoords, viewportIndex>
 std::tuple<glm::vec2, int32_t> screenCoordsGlobalToViewport(glm::vec2 screenCoords);
 std::tuple<glm::ivec2, int32_t> bufferIndsGlobalToViewport(glm::ivec2 bufferInds);
 
-// Given screen coordinates / buffer inds within a viewport, return the corresponding coordinates in whole window.
+// Given LOCAL screen coordinates / buffer inds within a viewport, return the corresponding GLOBAL coordinates.
+// Pass viewportInd=-1 to use the current active viewport.
 glm::vec2 screenCoordsViewportToGlobal(glm::vec2 screenCoords, int32_t viewportInd);
 glm::ivec2 bufferIndsViewportToGlobal(glm::ivec2 bufferInds, int32_t viewportInd);
 
@@ -238,7 +255,7 @@ void createViewportGrid(int gridWidth, int gridHeight);
 
 // Manually create viewports and arrange them
 void setNumViewports(int count);
-void setActiveViewportRelativeLocation(float posX, float posY); // on [0,1]
+void setActiveViewportRelativeLocation(float posX, float posY); // on [0,1], of the viewport's top-left corner (y down)
 void setActiveViewportRelativeSize(float width, float height);  // on [0,1]
 
 int getNumViewports();
@@ -305,7 +322,7 @@ void processSetCenter(glm::vec2 screenCoords);
 std::tuple<float, float> computeClipPlanes();
 
 // deprecated, bad names, see variants above
-glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t viewportInd = -1);
+glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords);
 
 
 } // namespace view

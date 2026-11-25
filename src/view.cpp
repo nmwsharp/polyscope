@@ -115,16 +115,28 @@ glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds) {
   return bufferIndsToScreenCoords(bufferInds.x, bufferInds.y);
 }
 
+// NOTE: All of the helpers here follow the conventions in the big note in view.h: screen coords and buffer inds both have
+// y=0 at the TOP, and differ only by the DPI scale factor. "Global" coordinates have their origin at the top-left of the
+// whole window, "local" (viewport) coordinates have their origin at the top-left of a particular viewport.
+
+namespace {
+// The top-left corner of a viewport, in global buffer inds (y-from-top)
+glm::ivec2 viewportOriginBufferInds(const ViewParameters& vp) { return glm::ivec2(vp.viewportPosX, vp.viewportPosY); }
+}; // namespace
+
+// local screen coords --> local buffer inds
 std::tuple<int, int> screenCoordsToBufferIndsViewport(glm::vec2 screenCoords, int32_t viewportInd) {
   if (viewportInd < 0) viewportInd = getActiveViewportIndex();
   const ViewParameters& vp = getViewportParameters(viewportInd);
-  glm::ivec2 globalInds = screenCoordsToBufferIndsVec(screenCoords);
-  // globalInds.y is y-from-top (screenCoordsToBufferIndsVec just scales without flipping).
-  // viewportPosY is y-from-bottom. Compute the viewport's top in y-from-top buffer coords first.
-  int svTopFromTopBuf = bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
-  int localX = std::max(std::min(globalInds.x - vp.viewportPosX, vp.viewportBufferWidth - 1), 0);
-  int localY = std::max(std::min(globalInds.y - svTopFromTopBuf, vp.viewportBufferHeight - 1), 0);
-  return std::tuple<int, int>(localX, localY);
+
+  int xPos = (screenCoords.x * view::bufferWidth) / view::windowWidth;
+  int yPos = (screenCoords.y * view::bufferHeight) / view::windowHeight;
+
+  // clamp to lie in the viewport
+  xPos = std::max(std::min(xPos, vp.viewportBufferWidth - 1), 0);
+  yPos = std::max(std::min(yPos, vp.viewportBufferHeight - 1), 0);
+
+  return std::tuple<int, int>(xPos, yPos);
 }
 
 glm::ivec2 screenCoordsToBufferIndsVecViewport(glm::vec2 screenCoords, int32_t viewportInd) {
@@ -133,13 +145,11 @@ glm::ivec2 screenCoordsToBufferIndsVecViewport(glm::vec2 screenCoords, int32_t v
   return out;
 }
 
+// local buffer inds --> local screen coords
 glm::vec2 bufferIndsToScreenCoordsViewport(int xPos, int yPos, int32_t viewportInd) {
-  if (viewportInd < 0) viewportInd = getActiveViewportIndex();
-  const ViewParameters& vp = getViewportParameters(viewportInd);
-  // xPos/yPos are local coords within the viewport (y-from-top).
-  // viewportPosY is y-from-bottom. Compute the viewport's top in y-from-top buffer coords.
-  int svTopFromTopBuf = bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
-  return bufferIndsToScreenCoords(vp.viewportPosX + xPos, svTopFromTopBuf + yPos);
+  // (only a change of scale, so the viewport is not actually needed here, but we keep the argument to mirror the
+  // function above)
+  return bufferIndsToScreenCoords(xPos, yPos);
 }
 
 glm::vec2 bufferIndsToScreenCoordsViewport(glm::ivec2 bufferInds, int32_t viewportInd) {
@@ -148,36 +158,39 @@ glm::vec2 bufferIndsToScreenCoordsViewport(glm::ivec2 bufferInds, int32_t viewpo
 
 std::tuple<glm::vec2, int32_t> screenCoordsGlobalToViewport(glm::vec2 screenCoords) {
   int32_t viewportInd = screenCoordsToViewportInd(screenCoords);
-  glm::ivec2 localInds = screenCoordsToBufferIndsVecViewport(screenCoords, viewportInd);
-  glm::vec2 localCoords = bufferIndsToScreenCoords(localInds);
+  glm::vec4 rect = getViewportImGuiRect(viewportInd); // {x, y, width, height} in global screen coords
+  glm::vec2 localCoords{std::max(std::min(screenCoords.x - rect.x, rect.z), 0.f),
+                        std::max(std::min(screenCoords.y - rect.y, rect.w), 0.f)};
   return {localCoords, viewportInd};
 }
 
 std::tuple<glm::ivec2, int32_t> bufferIndsGlobalToViewport(glm::ivec2 bufferInds) {
   int32_t viewportInd = bufferIndsToViewportInd(bufferInds);
-  glm::ivec2 localInds = screenCoordsToBufferIndsVecViewport(bufferIndsToScreenCoords(bufferInds), viewportInd);
+  const ViewParameters& vp = getViewportParameters(viewportInd);
+  glm::ivec2 localInds = bufferInds - viewportOriginBufferInds(vp);
+  localInds.x = std::max(std::min(localInds.x, vp.viewportBufferWidth - 1), 0);
+  localInds.y = std::max(std::min(localInds.y, vp.viewportBufferHeight - 1), 0);
   return {localInds, viewportInd};
 }
 
 glm::vec2 screenCoordsViewportToGlobal(glm::vec2 screenCoords, int32_t viewportInd) {
-  glm::ivec2 localInds = screenCoordsToBufferIndsVec(screenCoords);
-  glm::vec2 globalScreenCoords = bufferIndsToScreenCoordsViewport(localInds.x, localInds.y, viewportInd);
-  return globalScreenCoords;
+  glm::vec4 rect = getViewportImGuiRect(viewportInd); // {x, y, width, height} in global screen coords
+  return glm::vec2{rect.x + screenCoords.x, rect.y + screenCoords.y};
 }
 
 glm::ivec2 bufferIndsViewportToGlobal(glm::ivec2 bufferInds, int32_t viewportInd) {
   if (viewportInd < 0) viewportInd = getActiveViewportIndex();
   const ViewParameters& vp = getViewportParameters(viewportInd);
-  int svTopFromTopBuf = bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
-  return glm::ivec2(vp.viewportPosX + bufferInds.x, svTopFromTopBuf + bufferInds.y);
+  return viewportOriginBufferInds(vp) + bufferInds;
 }
 
 int32_t bufferIndsToViewportInd(glm::ivec2 bufferInds) {
   for (int32_t i = getNumViewports() - 1; i >= 0; i--) {
     // go back-to-front, so we report the topmost matching viewport
     const ViewParameters& vp = getViewportParameters(i);
-    if (bufferInds.x >= vp.viewportPosX && bufferInds.x < vp.viewportPosX + vp.viewportBufferWidth &&
-        bufferInds.y >= vp.viewportPosY && bufferInds.y < vp.viewportPosY + vp.viewportBufferHeight) {
+    glm::ivec2 origin = viewportOriginBufferInds(vp); // (y-from-top, like the input)
+    if (bufferInds.x >= origin.x && bufferInds.x < origin.x + vp.viewportBufferWidth && bufferInds.y >= origin.y &&
+        bufferInds.y < origin.y + vp.viewportBufferHeight) {
       return i;
     }
   }
@@ -186,9 +199,7 @@ int32_t bufferIndsToViewportInd(glm::ivec2 bufferInds) {
 }
 
 int32_t screenCoordsToViewportInd(glm::vec2 screenCoords) {
-  // screenCoords.y is from the top (ImGui etc convention); viewportPosY is from the bottom (OpenGL convention)
-  glm::vec2 flipped{screenCoords.x, windowHeight - screenCoords.y};
-  return bufferIndsToViewportInd(screenCoordsToBufferIndsVec(flipped));
+  return bufferIndsToViewportInd(screenCoordsToBufferIndsVec(screenCoords));
 }
 
 
@@ -918,45 +929,82 @@ glm::vec3 getLookVec() {
   return Rt * glm::vec3(0.0, 0.0, -1.0);
 }
 
-glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords, int32_t viewportInd) {
-  if (viewportInd < 0) viewportInd = screenCoordsToViewportInd(screenCoords);
-  const ViewParameters& vp = getViewportParameters(viewportInd);
+// NOTE: There are two flavors of the ray/position helpers below, see the note in view.h:
+//  - the plain versions (like screenCoordsToWorldRay()) take GLOBAL coordinates on the whole window, find the viewport
+//    that contains them, and call the viewport version.
+//  - the viewport versions (like viewportScreenCoordsToWorldRay()) take coordinates LOCAL to a viewport, and use the
+//    camera of that viewport, which might not be the active one.
 
-  glm::mat4 viewMat = getCameraViewMatrix();
-  glm::mat4 proj = getCameraPerspectiveMatrixForViewport(viewportInd);
-  glm::vec4 viewport = {0., 0., vp.viewportWindowWidth, vp.viewportWindowHeight};
-
-  // Convert global screen coords (y-from-top) to viewport-local.
-  // viewportRelativePosY is y-from-bottom, so the top of the viewport in y-from-top is:
-  // (1 - posY - height) * windowHeight
-  float localX = screenCoords.x - windowWidth * vp.viewportRelativePosX;
-  float svTopFromTop = (1.f - vp.viewportRelativePosY - vp.viewportRelativeHeight) * windowHeight;
-  float localY = screenCoords.y - svTopFromTop;
-
-  glm::vec3 screenPos3{localX, vp.viewportWindowHeight - localY, 0.};
-  glm::vec3 worldPos = glm::unProject(screenPos3, viewMat, proj, viewport);
-  glm::vec3 worldRayDir = glm::normalize(glm::vec3(worldPos) - getCameraWorldPosition());
-
-  return worldRayDir;
+namespace {
+glm::vec3 cameraWorldPositionFromViewMat(const glm::mat4& viewMat) {
+  glm::mat4 invViewMat = glm::inverse(viewMat);
+  return glm::vec3{invViewMat[3][0], invViewMat[3][1], invViewMat[3][2]};
 }
 
-glm::vec3 bufferIndsToWorldRay(glm::ivec2 bufferInds, int32_t viewportInd) {
-  return bufferCoordsToWorldRay(glm::vec2(bufferInds), viewportInd);
+// Find the viewport that contains some global screen coords, and the coords in that viewport's local frame.
+// Unlike screenCoordsGlobalToViewport(), the local coords are NOT clamped to the viewport. The plain ray functions
+// don't clamp, so points outside the window still give a ray, like they always did when using a single viewport.
+std::tuple<glm::vec2, int32_t> globalScreenCoordsToLocalUnclamped(glm::vec2 screenCoords) {
+  int32_t viewportInd = screenCoordsToViewportInd(screenCoords);
+  glm::vec4 rect = getViewportImGuiRect(viewportInd); // {x, y, width, height} in global screen coords
+  return std::tuple<glm::vec2, int32_t>(glm::vec2(screenCoords.x - rect.x, screenCoords.y - rect.y), viewportInd);
 }
 
-glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t viewportInd) {
+// Same, for buffer coords
+std::tuple<glm::vec2, int32_t> globalBufferCoordsToLocalUnclamped(glm::vec2 bufferCoords) {
+  int32_t viewportInd = bufferIndsToViewportInd(glm::ivec2(bufferCoords));
+  glm::ivec2 origin = viewportOriginBufferInds(getViewportParameters(viewportInd));
+  return std::tuple<glm::vec2, int32_t>(bufferCoords - glm::vec2(origin), viewportInd);
+}
+
+// The workhorse for rays from buffer coords
+glm::vec3 localBufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t viewportInd) {
   if (viewportInd < 0) viewportInd = getActiveViewportIndex();
   const ViewParameters& vp = getViewportParameters(viewportInd);
 
-  glm::mat4 view = getCameraViewMatrix();
   glm::mat4 proj = getCameraPerspectiveMatrixForViewport(viewportInd);
   glm::vec4 viewport = {0., 0., vp.viewportBufferWidth, vp.viewportBufferHeight};
 
   glm::vec3 screenPos3{bufferCoords.x, vp.viewportBufferHeight - bufferCoords.y, 0.};
-  glm::vec3 worldPos = glm::unProject(screenPos3, view, proj, viewport);
-  glm::vec3 worldRayDir = glm::normalize(glm::vec3(worldPos) - getCameraWorldPosition());
+  glm::vec3 worldPos = glm::unProject(screenPos3, vp.viewMat, proj, viewport);
+  glm::vec3 worldRayDir = glm::normalize(worldPos - cameraWorldPositionFromViewMat(vp.viewMat));
 
   return worldRayDir;
+}
+}; // namespace
+
+glm::vec3 viewportScreenCoordsToWorldRay(glm::vec2 screenCoords, int32_t viewportInd) {
+  if (viewportInd < 0) viewportInd = getActiveViewportIndex();
+  const ViewParameters& vp = getViewportParameters(viewportInd);
+
+  glm::mat4 proj = getCameraPerspectiveMatrixForViewport(viewportInd);
+  glm::vec4 viewport = {0., 0., vp.viewportWindowWidth, vp.viewportWindowHeight};
+
+  glm::vec3 screenPos3{screenCoords.x, vp.viewportWindowHeight - screenCoords.y, 0.};
+  glm::vec3 worldPos = glm::unProject(screenPos3, vp.viewMat, proj, viewport);
+  glm::vec3 worldRayDir = glm::normalize(worldPos - cameraWorldPositionFromViewMat(vp.viewMat));
+
+  return worldRayDir;
+}
+
+glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords) {
+  glm::vec2 localScreenCoords;
+  int32_t viewportInd;
+  std::tie(localScreenCoords, viewportInd) = globalScreenCoordsToLocalUnclamped(screenCoords);
+  return viewportScreenCoordsToWorldRay(localScreenCoords, viewportInd);
+}
+
+glm::vec3 viewportBufferIndsToWorldRay(glm::ivec2 bufferInds, int32_t viewportInd) {
+  return localBufferCoordsToWorldRay(glm::vec2(bufferInds), viewportInd);
+}
+
+glm::vec3 bufferIndsToWorldRay(glm::ivec2 bufferInds) { return bufferCoordsToWorldRay(glm::vec2(bufferInds)); }
+
+glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords) {
+  glm::vec2 localBufferCoords;
+  int32_t viewportInd;
+  std::tie(localBufferCoords, viewportInd) = globalBufferCoordsToLocalUnclamped(bufferCoords);
+  return localBufferCoordsToWorldRay(localBufferCoords, viewportInd);
 }
 
 std::tuple<float, float> computeClipPlanes() {
@@ -973,7 +1021,14 @@ std::tuple<float, float> computeClipPlanes() {
   return std::make_tuple(absNearClip, absFarClip);
 }
 
-glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth, int32_t viewportInd) {
+glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth) {
+  glm::vec2 localScreenCoords;
+  int32_t viewportInd;
+  std::tie(localScreenCoords, viewportInd) = globalScreenCoordsToLocalUnclamped(screenCoords);
+  return viewportScreenCoordsAndDepthToWorldPosition(localScreenCoords, clipDepth, viewportInd);
+}
+
+glm::vec3 viewportScreenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth, int32_t viewportInd) {
 
   if (clipDepth == 1.) {
     // if we didn't hit anything in the depth buffer, just return infinity
@@ -981,23 +1036,17 @@ glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clip
     return glm::vec3{inf, inf, inf};
   }
 
-  if (viewportInd < 0) viewportInd = screenCoordsToViewportInd(screenCoords);
+  if (viewportInd < 0) viewportInd = getActiveViewportIndex();
   const ViewParameters& vp = getViewportParameters(viewportInd);
 
-  glm::mat4 view = getCameraViewMatrix();
-  glm::mat4 viewInv = glm::inverse(view);
+  glm::mat4 viewInv = glm::inverse(vp.viewMat);
   glm::mat4 proj = getCameraPerspectiveMatrixForViewport(viewportInd);
   glm::mat4 projInv = glm::inverse(proj);
   // glm::vec2 depthRange = {0., 1.}; // no support for nonstandard depth range, currently
 
-  // Convert global screen coords (y-from-top) to viewport-local, then normalize to [0,1].
-  // viewportRelativePosY is y-from-bottom, so the top of the viewport in y-from-top is:
-  // (1 - posY - height) * windowHeight
-  float localX = screenCoords.x - windowWidth * vp.viewportRelativePosX;
-  float svTopFromTop = (1.f - vp.viewportRelativePosY - vp.viewportRelativeHeight) * windowHeight;
-  float localY = screenCoords.y - svTopFromTop;
-  glm::vec2 screenPos{localX / static_cast<float>(vp.viewportWindowWidth),
-                      1.f - localY / static_cast<float>(vp.viewportWindowHeight)};
+  // Normalize the local screen coords (y-from-top) to [0,1], with y flipped to be y-from-bottom as in clip space
+  glm::vec2 screenPos{screenCoords.x / static_cast<float>(vp.viewportWindowWidth),
+                      1.f - screenCoords.y / static_cast<float>(vp.viewportWindowHeight)};
   float z = clipDepth * 2.0f - 1.0f;
   glm::vec4 clipPos = glm::vec4(screenPos * 2.0f - 1.0f, z, 1.0f);
   glm::vec4 viewPos = projInv * clipPos;
@@ -1685,7 +1734,7 @@ glm::vec4 getViewportImGuiRect(int32_t viewportInd) {
   if (viewportInd < 0) viewportInd = activeViewportIndex;
   const ViewParameters& vp = getViewportParameters(viewportInd);
   float x = vp.viewportRelativePosX * windowWidth;
-  float y = (1.f - vp.viewportRelativePosY - vp.viewportRelativeHeight) * windowHeight;
+  float y = vp.viewportRelativePosY * windowHeight;
   return glm::vec4(x, y, vp.viewportWindowWidth, vp.viewportWindowHeight);
 }
 
@@ -1774,9 +1823,8 @@ void createViewportGrid(int gridWidth, int gridHeight) {
     for (int j = 0; j < gridWidth; j++) {
       int ind = i * gridWidth + j;
       activateViewport(ind);
-      // note: this intentionally puts the first grid subiew in the upper-left, matching convention from other software
-      setActiveViewportRelativeLocation(static_cast<float>(j) / gridWidth,
-                                       static_cast<float>(gridHeight - i - 1) / gridHeight);
+      // note: this intentionally puts the first grid viewport in the upper-left, matching convention from other software
+      setActiveViewportRelativeLocation(static_cast<float>(j) / gridWidth, static_cast<float>(i) / gridHeight);
       setActiveViewportRelativeSize(cellW, cellH);
     }
   }

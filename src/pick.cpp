@@ -10,21 +10,31 @@
 
 namespace polyscope {
 
+// The workhorse for all of the pick functions below. Takes buffer inds that are LOCAL to the currently ACTIVE viewport.
+// (the public functions below take care of routing to the right viewport and converting coordinates)
+static PickResult pickAtActiveViewportBufferInds(glm::ivec2 bufferInds);
+
 PickResult pickAtScreenCoords(glm::vec2 screenCoords) {
-  int32_t viewportInd = view::screenCoordsToViewportInd(screenCoords);
-  int32_t prevViewport = view::getActiveViewportIndex();
-  view::activateViewport(viewportInd);
-  glm::ivec2 localBufferInds = view::screenCoordsToBufferIndsVecViewport(screenCoords, viewportInd);
-  PickResult result = pickAtBufferInds(localBufferInds);
-  view::activateViewport(prevViewport);
-  return result;
+  // screenCoords are global, find the viewport they lie in and the local coordinates there
+  glm::vec2 localScreenCoords;
+  int32_t viewportInd;
+  std::tie(localScreenCoords, viewportInd) = view::screenCoordsGlobalToViewport(screenCoords);
+  return pickViewportAtScreenCoords(localScreenCoords, viewportInd);
+}
+
+PickResult pickAtBufferInds(glm::ivec2 bufferInds) {
+  // bufferInds are global, find the viewport they lie in and the local indices there
+  glm::ivec2 localBufferInds;
+  int32_t viewportInd;
+  std::tie(localBufferInds, viewportInd) = view::bufferIndsGlobalToViewport(bufferInds);
+  return pickViewportAtBufferInds(localBufferInds, viewportInd);
 }
 
 PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t viewportInd) {
   int32_t prevViewport = view::getActiveViewportIndex();
   view::activateViewport(viewportInd);
-  glm::ivec2 localBufferInds = view::screenCoordsToBufferIndsVec(screenCoords);
-  PickResult result = pickAtBufferInds(localBufferInds);
+  glm::ivec2 localBufferInds = view::screenCoordsToBufferIndsVecViewport(screenCoords, viewportInd);
+  PickResult result = pickAtActiveViewportBufferInds(localBufferInds);
   view::activateViewport(prevViewport);
   return result;
 }
@@ -32,12 +42,12 @@ PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t viewportIn
 PickResult pickViewportAtBufferInds(glm::ivec2 bufferInds, int32_t viewportInd) {
   int32_t prevViewport = view::getActiveViewportIndex();
   view::activateViewport(viewportInd);
-  PickResult result = pickAtBufferInds(bufferInds); // no need to convert inds: already local to the viewport
+  PickResult result = pickAtActiveViewportBufferInds(bufferInds); // already local to the viewport, no conversion
   view::activateViewport(prevViewport);
   return result;
 }
 
-PickResult pickAtBufferInds(glm::ivec2 bufferInds) {
+static PickResult pickAtActiveViewportBufferInds(glm::ivec2 bufferInds) {
   // bufferInds are local to the active viewport
   PickResult result;
 
@@ -53,9 +63,13 @@ PickResult pickAtBufferInds(glm::ivec2 bufferInds) {
   // Transcribe result into return tuple
   result.structure = std::get<0>(rawPickResult);
   result.quantity = std::get<1>(rawPickResult);
-  result.bufferInds = bufferInds;
-  result.screenCoords = view::bufferIndsToScreenCoordsViewport(bufferInds);
-  result.position = view::screenCoordsAndDepthToWorldPosition(result.screenCoords, clipDepth);
+  result.viewportInd = view::getActiveViewportIndex();
+  result.viewportBufferInds = bufferInds;
+  result.viewportScreenCoords = view::bufferIndsToScreenCoordsViewport(bufferInds, result.viewportInd);
+  result.bufferInds = view::bufferIndsViewportToGlobal(bufferInds, result.viewportInd);
+  result.screenCoords = view::bufferIndsToScreenCoords(result.bufferInds);
+  result.position =
+      view::viewportScreenCoordsAndDepthToWorldPosition(result.viewportScreenCoords, clipDepth, result.viewportInd);
   result.depth = glm::length(result.position - view::getCameraWorldPosition());
 
 
@@ -227,17 +241,38 @@ uint64_t localIndexToGlobal(std::tuple<Structure*, Quantity*, uint64_t> localPic
   return 0;
 }
 
-std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords) {
-  int xInd, yInd;
-  std::tie(xInd, yInd) = view::screenCoordsToBufferInds(screenCoords);
-  return pickAtBufferCoords(xInd, yInd);
+// === The old, deprecated picking API ===
+//
+// These predate viewports, so with a single viewport (all that older code could have) they must keep behaving exactly
+// as they always have. When using multiple viewports, they follow the same convention as the other viewport-aware
+// functions: the coordinates are LOCAL to the viewport `iView`, where iView < 0 means the active viewport. (Some
+// internal code relies on this, to pick in whatever viewport it is currently rendering.) The non-deprecated
+// polyscope::pickAtScreenCoords() and polyscope::pickAtBufferInds() take global coordinates and find the viewport.
+
+static std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFullInActiveViewport(int xPos, int yPos);
+
+std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords, int32_t iView) {
+  glm::ivec2 localInds = view::screenCoordsToBufferIndsVecViewport(screenCoords, iView);
+  return evaluatePickQuery(localInds.x, localInds.y, iView);
 }
 
-std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos, int iView) {
+std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos, int32_t iView) {
   return evaluatePickQuery(xPos, yPos, iView);
 }
 
 std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos, int yPos, int32_t iView) {
+  // the pick is evaluated in the active viewport, so temporarily activate the requested viewport if needed
+  int32_t prevViewport = view::getActiveViewportIndex();
+  if (iView < 0 || iView == prevViewport) {
+    return evaluatePickQueryFullInActiveViewport(xPos, yPos);
+  }
+  view::activateViewport(iView);
+  std::tuple<Structure*, Quantity*, uint64_t> result = evaluatePickQueryFullInActiveViewport(xPos, yPos);
+  view::activateViewport(prevViewport);
+  return result;
+}
+
+static std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFullInActiveViewport(int xPos, int yPos) {
 
   // NOTE: hack used for debugging: if xPos == yPos == -1 we do a pick render but do not query the value.
 

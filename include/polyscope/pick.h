@@ -33,8 +33,22 @@ struct PickResult {
   std::string structureType = "";
   std::string structureName = "";
   std::string quantityName = "";
+
+  // Where the pick was evaluated, in two coordinate frames. See the notes in view.h on screen coords vs. buffer inds.
+  //
+  // `screenCoords` and `bufferInds` are GLOBAL: they are positions in the whole window, regardless of viewport.
+  // When using a single viewport, these are all you need.
   glm::vec2 screenCoords;
   glm::ivec2 bufferInds;
+  //
+  // The `viewport*` members are LOCAL to the viewport that the pick landed in, which is `viewportInd`: the origin is
+  // the top-left of that viewport. These are the coordinates to use with pickViewportAtScreenCoords() and
+  // pickViewportAtBufferInds(), so that pickViewportAtBufferInds(r.viewportBufferInds, r.viewportInd) round-trips.
+  // With a single viewport (viewportInd == 0, covering the whole window), these equal the global values above.
+  int32_t viewportInd = 0;
+  glm::vec2 viewportScreenCoords;
+  glm::ivec2 viewportBufferInds;
+
   glm::vec3 position;
   float depth;
   uint64_t localIndex = INVALID_IND_64;
@@ -42,12 +56,12 @@ struct PickResult {
 
 // Query functions to evaluate a pick.
 // Internally, these do a render pass to populate relevant information, then query the resulting buffers.
-// If using viewports, these assume inputs are on the full screen coordinates of the whole window, and internally
-// route to the appropriate viewport.
+// If using viewports, these assume inputs are GLOBAL coordinates on the whole window, and internally route to the
+// appropriate viewport.
 PickResult pickAtScreenCoords(glm::vec2 screenCoords); // takes screen coordinates
 PickResult pickAtBufferInds(glm::ivec2 bufferInds);    // takes indices into render buffer
 
-// Viewport-explicit pick variants: coordinates are local to the given viewport (origin at viewport top-left).
+// Viewport-explicit pick variants: coordinates are LOCAL to the given viewport (origin at viewport top-left).
 PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t viewportInd);
 PickResult pickViewportAtBufferInds(glm::ivec2 bufferInds, int32_t viewportInd);
 
@@ -66,6 +80,10 @@ namespace pick {
 // Old, deprecated picking API. Use the above functions instead.
 // Get the structure which was clicked on (nullptr if none), and the pick ID in local indices for that structure (such
 // that 0 is the first index as returned from requestPickBufferRange())
+//
+// When using multiple viewports, the coordinates are LOCAL to the viewport iView, where iView<0 means the active
+// viewport, as with other viewport-aware functions. With a single viewport, these all behave as they always did. To pick
+// using global window coordinates and have the viewport found automatically, use the functions above.
 std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords,
                                                    int32_t iView = -1); // takes screen coordinates
 std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos,

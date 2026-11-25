@@ -547,10 +547,9 @@ void processInputEvents() {
           }
           if (isRotate) {
             // Normalize mouse position relative to the active viewport for arc-based rotation.
-            // viewportRelativePosY is y-from-bottom (OpenGL); convert to screen y-from-top for svTop.
             view::ViewParameters svp = view::getViewportParameters(view::getActiveViewportIndex());
             float svLeft = svp.viewportRelativePosX * view::windowWidth;
-            float svTop = (1.0f - svp.viewportRelativePosY - svp.viewportRelativeHeight) * view::windowHeight;
+            float svTop = svp.viewportRelativePosY * view::windowHeight;
             glm::vec2 currPos{(io.MousePos.x - svLeft) / svp.viewportWindowWidth,
                               (svp.viewportWindowHeight - (io.MousePos.y - svTop)) / svp.viewportWindowHeight};
             currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
@@ -693,7 +692,9 @@ void renderScene() {
         // Composite the result of this pass in to the result buffer.
         // Set the viewport to the viewport's region in sceneBufferFinal so the fullscreen quad composites
         // only into the correct portion of the final buffer.
-        render::engine->sceneBufferFinal->setViewport(ssaa * vp.viewportPosX, ssaa * vp.viewportPosY,
+        // (viewportPosY is y-from-top like everywhere else, but OpenGL viewports have y=0 at the bottom, so flip it)
+        int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
+        render::engine->sceneBufferFinal->setViewport(ssaa * vp.viewportPosX, ssaa * viewportPosYFromBottom,
                                                       ssaa * vp.viewportBufferWidth, ssaa * vp.viewportBufferHeight);
         render::engine->sceneBufferFinal->bindForRendering();
         render::engine->setDepthMode(DepthMode::Disable);
@@ -748,8 +749,10 @@ void renderScene() {
 
       view::ViewParameters vp = view::getViewportParameters(viewportInd);
       int ssaaFactor = render::engine->getSSAAFactor();
+      // (viewportPosY is y-from-top like everywhere else, but OpenGL has y=0 at the bottom, so flip it)
+      int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
       render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), ssaaFactor * vp.viewportPosX,
-                                          ssaaFactor * vp.viewportPosY);
+                                          ssaaFactor * viewportPosYFromBottom);
     }
   }
 
@@ -1073,6 +1076,10 @@ void buildPickGui() {
 
     ImGui::Text("screen coordinates: (%.2f,%.2f)  depth: %g", selection.screenCoords.x, selection.screenCoords.y,
                 selection.depth);
+    if (view::getNumViewports() > 1) {
+      ImGui::Text("viewport: %d  local coordinates: (%.2f,%.2f)", selection.viewportInd,
+                  selection.viewportScreenCoords.x, selection.viewportScreenCoords.y);
+    }
     ImGui::Text("world position: <%g, %g, %g>", selection.position.x, selection.position.y, selection.position.z);
     ImGui::NewLine();
 

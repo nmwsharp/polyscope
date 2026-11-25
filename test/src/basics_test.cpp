@@ -399,49 +399,161 @@ TEST_F(PolyscopeTest, ViewportCoordinates) {
   polyscope::view::createViewportGrid(1, 1); // restore
 }
 
-// The mock backend can't return real pick hits, so this just tests that picks are routed to the right viewport, and
-// that coordinates are converted correctly (including for an inset viewport that overlaps viewport 0).
-TEST_F(PolyscopeTest, ViewportPickRouting) {
-  polyscope::view::setWindowSize(800, 600);
-  polyscope::registerPointCloud("cloud", std::vector<glm::vec3>{{0, 0, 0}, {1, 0, 0}});
-
-  // full-window main viewport, with an inset in the lower-right corner
+// A full-window viewport 0, with a small inset viewport 1 in the lower-right corner. Leaves viewport 0 active.
+static void createInsetViewports() {
   polyscope::view::setNumViewports(2);
   polyscope::view::activateViewport(0);
   polyscope::view::setActiveViewportRelativeLocation(0.f, 0.f);
   polyscope::view::setActiveViewportRelativeSize(1.f, 1.f);
   polyscope::view::activateViewport(1);
-  polyscope::view::setActiveViewportRelativeLocation(0.7f, 0.f);
+  polyscope::view::setActiveViewportRelativeLocation(0.7f, 0.7f);
   polyscope::view::setActiveViewportRelativeSize(0.3f, 0.3f);
   polyscope::view::activateViewport(0);
+}
+
+// Unlike the 2x1 split above, an inset is not symmetric in y, so this catches y-from-top vs y-from-bottom mixups.
+TEST_F(PolyscopeTest, ViewportCoordinatesInset) {
+  polyscope::view::setWindowSize(800, 600);
+  createInsetViewports();
+  polyscope::show(3);
+
+  float winW = polyscope::view::windowWidth;
+  float winH = polyscope::view::windowHeight;
+  glm::vec2 insetSc{0.85f * winW, 0.85f * winH};      // in the inset, at the lower-right
+  glm::vec2 upperRightSc{0.85f * winW, 0.15f * winH}; // not in the inset
+
+  // finding the viewport agrees for screen coords and buffer inds
+  EXPECT_EQ(polyscope::view::screenCoordsToViewportInd(insetSc), 1);
+  EXPECT_EQ(polyscope::view::screenCoordsToViewportInd(upperRightSc), 0);
+  EXPECT_EQ(polyscope::view::bufferIndsToViewportInd(polyscope::view::screenCoordsToBufferIndsVec(insetSc)), 1);
+  EXPECT_EQ(polyscope::view::bufferIndsToViewportInd(polyscope::view::screenCoordsToBufferIndsVec(upperRightSc)), 0);
+
+  // global <--> local round trips. The center of the inset is 0.15 of the window from its top-left corner.
+  auto [localSc, indSc] = polyscope::view::screenCoordsGlobalToViewport(insetSc);
+  EXPECT_EQ(indSc, 1);
+  EXPECT_NEAR(localSc.x, 0.15f * winW, 1e-3f);
+  EXPECT_NEAR(localSc.y, 0.15f * winH, 1e-3f);
+  EXPECT_NEAR(polyscope::view::screenCoordsViewportToGlobal(localSc, indSc).y, insetSc.y, 1e-3f);
+
+  glm::ivec2 insetBi = polyscope::view::screenCoordsToBufferIndsVec(insetSc);
+  auto [localBi, indBi] = polyscope::view::bufferIndsGlobalToViewport(insetBi);
+  EXPECT_EQ(indBi, 1);
+  EXPECT_EQ(polyscope::view::bufferIndsViewportToGlobal(localBi, indBi), insetBi);
+
+  polyscope::view::createViewportGrid(1, 1); // restore
+}
+
+// The viewport ray helpers take local coordinates and use that viewport's camera (even if it isn't the active one), and
+// the plain ones take global coordinates and find the viewport.
+TEST_F(PolyscopeTest, ViewportRays) {
+  polyscope::view::setWindowSize(800, 600);
+  createInsetViewports();
+  polyscope::view::setViewportsShareNavigation(false);
+  polyscope::show(3);
+
+  // cameras looking down different axes
+  polyscope::view::activateViewport(1);
+  polyscope::view::lookAt(glm::vec3{0.f, 0.f, 5.f}, glm::vec3{0.f, 0.f, 0.f}); // looks along -z
+  polyscope::view::activateViewport(0);
+  polyscope::view::lookAt(glm::vec3{5.f, 0.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}); // looks along -x
+
+  float winW = polyscope::view::windowWidth;
+  float winH = polyscope::view::windowHeight;
+
+  // the center of each viewport has a ray along that viewport's look direction (the active viewport is the default)
+  EXPECT_NEAR(polyscope::view::viewportScreenCoordsToWorldRay(glm::vec2{0.15f * winW, 0.15f * winH}, 1).z, -1.f, 1e-3f);
+  EXPECT_NEAR(polyscope::view::viewportScreenCoordsToWorldRay(glm::vec2{0.5f * winW, 0.5f * winH}).x, -1.f, 1e-3f);
+
+  // the same with global coordinates
+  EXPECT_NEAR(polyscope::view::screenCoordsToWorldRay(glm::vec2{0.85f * winW, 0.85f * winH}).z, -1.f, 1e-3f);
+  EXPECT_NEAR(polyscope::view::screenCoordsToWorldRay(glm::vec2{0.5f * winW, 0.5f * winH}).x, -1.f, 1e-3f);
+
+  polyscope::view::setViewportsShareNavigation(true);
+  polyscope::view::createViewportGrid(1, 1); // restore
+}
+
+// With a single viewport, as in all code from before viewports, the plain ray function takes window coordinates and does
+// not clamp them to the window.
+TEST_F(PolyscopeTest, RayHelpersSingleViewport) {
+  polyscope::view::setWindowSize(800, 600);
+  polyscope::view::createViewportGrid(1, 1);
+  polyscope::show(3);
+
+  glm::vec2 outside{-300.f, 900.f};
+  EXPECT_EQ(polyscope::view::screenCoordsToWorldRay(outside), polyscope::view::viewportScreenCoordsToWorldRay(outside, 0));
+  EXPECT_GT(glm::length(polyscope::view::screenCoordsToWorldRay(outside) -
+                        polyscope::view::screenCoordsToWorldRay(glm::vec2{0.f, 599.f})),
+            1e-2f);
+}
+
+// The mock backend can't return real hits, so this tests that picks are routed to the right viewport, with the right
+// coordinates. (See the next test for real hits.)
+TEST_F(PolyscopeTest, ViewportPickRouting) {
+  polyscope::view::setWindowSize(800, 600);
+  polyscope::registerPointCloud("cloud", std::vector<glm::vec3>{{0, 0, 0}, {1, 0, 0}});
+  createInsetViewports();
   polyscope::show(3);
 
   float winW = polyscope::view::windowWidth;
   float winH = polyscope::view::windowHeight;
   const polyscope::view::ViewParameters& inset = polyscope::view::getViewportParameters(1);
 
-  // a click in the middle of the inset goes to the inset, at the center of its local buffer
-  glm::vec2 insetCenterGlobal{0.85f * winW, 0.85f * winH};
-  EXPECT_EQ(polyscope::view::screenCoordsToViewportInd(insetCenterGlobal), 1);
-  polyscope::PickResult insetPick = polyscope::pickAtScreenCoords(insetCenterGlobal);
-  EXPECT_NEAR(insetPick.bufferInds.x, inset.viewportBufferWidth / 2, 1);
-  EXPECT_NEAR(insetPick.bufferInds.y, inset.viewportBufferHeight / 2, 1);
+  // a global point in the inset: the plain coordinates are global, the viewport ones are at the center of the inset
+  glm::vec2 insetSc{0.85f * winW, 0.85f * winH};
+  polyscope::PickResult pick = polyscope::pickAtScreenCoords(insetSc);
+  EXPECT_EQ(pick.viewportInd, 1);
+  EXPECT_NEAR(pick.screenCoords.x, insetSc.x, 1);
+  EXPECT_NEAR(pick.screenCoords.y, insetSc.y, 1);
+  EXPECT_NEAR(pick.viewportScreenCoords.x, 0.15f * winW, 1);
+  EXPECT_NEAR(pick.viewportScreenCoords.y, 0.15f * winH, 1);
+  EXPECT_NEAR(pick.viewportBufferInds.x, inset.viewportBufferWidth / 2, 1);
+  EXPECT_NEAR(pick.viewportBufferInds.y, inset.viewportBufferHeight / 2, 1);
 
-  // the explicit-viewport variant agrees, given the same point in the inset's local screen coords
-  polyscope::PickResult insetPickLocal = polyscope::pickViewportAtScreenCoords(glm::vec2{0.15f * winW, 0.15f * winH}, 1);
-  EXPECT_NEAR(insetPickLocal.bufferInds.x, insetPick.bufferInds.x, 1);
-  EXPECT_NEAR(insetPickLocal.bufferInds.y, insetPick.bufferInds.y, 1);
+  // global buffer inds route the same way, and a pick can be reproduced from its local coordinates and viewport
+  EXPECT_EQ(polyscope::pickAtBufferInds(pick.bufferInds).viewportInd, 1);
+  EXPECT_EQ(polyscope::pickViewportAtBufferInds(pick.viewportBufferInds, pick.viewportInd).bufferInds, pick.bufferInds);
 
-  // a click outside the inset goes to viewport 0, where local and global coordinates coincide
-  glm::vec2 mainGlobal{0.3f * winW, 0.3f * winH};
-  EXPECT_EQ(polyscope::view::screenCoordsToViewportInd(mainGlobal), 0);
-  polyscope::PickResult mainPick = polyscope::pickAtScreenCoords(mainGlobal);
-  glm::ivec2 mainExpected = polyscope::view::screenCoordsToBufferIndsVec(mainGlobal);
-  EXPECT_NEAR(mainPick.bufferInds.x, mainExpected.x, 1);
-  EXPECT_NEAR(mainPick.bufferInds.y, mainExpected.y, 1);
-
-  // picking must not change which viewport is active
+  // a point outside the inset is in viewport 0, and picking does not change which viewport is active
+  EXPECT_EQ(polyscope::pickAtScreenCoords(glm::vec2{0.3f * winW, 0.3f * winH}).viewportInd, 0);
   EXPECT_EQ(polyscope::view::getActiveViewportIndex(), 0);
+
+  polyscope::view::createViewportGrid(1, 1); // restore
+  polyscope::removeAllStructures();
+}
+
+// Pick which structure is really hit, with overlapping viewports. Needs real rendering, so it is skipped with the mock
+// backend.
+TEST_F(PolyscopeTest, ViewportPickHitsStructure) {
+  if (testBackend == "openGL_mock") GTEST_SKIP() << "needs a real rendering backend to get real pick hits";
+
+  polyscope::view::setWindowSize(800, 600);
+  createInsetViewports();
+
+  // Two big squares facing the camera: "A" at z=0 shown only in viewport 0, and "B" at z=1 shown only in the inset
+  auto makeSquare = [](float z) {
+    return std::vector<glm::vec3>{{-10, -10, z}, {10, -10, z}, {10, 10, z}, {-10, 10, z}};
+  };
+  std::vector<std::vector<size_t>> faces{{0, 1, 2}, {0, 2, 3}};
+  polyscope::registerSurfaceMesh("A", makeSquare(0.f), faces)->setViewportVisibilityExclusive(0);
+  polyscope::registerSurfaceMesh("B", makeSquare(1.f), faces)->setViewportVisibilityExclusive(1);
+  polyscope::view::lookAt(glm::vec3{0.f, 0.f, 5.f}, glm::vec3{0.f, 0.f, 0.f});
+  polyscope::show(3);
+
+  float winW = polyscope::view::windowWidth;
+  float winH = polyscope::view::windowHeight;
+  glm::vec2 insetSc{0.85f * winW, 0.85f * winH};
+
+  // a global point in the inset hits "B", at its depth
+  polyscope::PickResult insetPick = polyscope::pickAtScreenCoords(insetSc);
+  EXPECT_EQ(insetPick.structureName, "B");
+  EXPECT_EQ(insetPick.viewportInd, 1);
+  EXPECT_NEAR(insetPick.position.z, 1.f, 0.05f);
+
+  // a global point outside the inset hits "A"
+  EXPECT_EQ(polyscope::pickAtScreenCoords(glm::vec2{0.3f * winW, 0.3f * winH}).structureName, "A");
+
+  // asking for viewport 0 at the same point as the inset hits "A", the structure underneath the inset
+  EXPECT_EQ(polyscope::pickViewportAtScreenCoords(insetSc, 0).structureName, "A");
 
   polyscope::view::createViewportGrid(1, 1); // restore
   polyscope::removeAllStructures();
