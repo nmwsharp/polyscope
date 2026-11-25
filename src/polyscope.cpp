@@ -657,11 +657,11 @@ void renderScene() {
     render::engine->sceneBufferFinal->clearAlpha = 0;
     render::engine->sceneBufferFinal->clear();
 
-    for (int iSubView = 0; iSubView < view::getNumViewports(); iSubView++) {
-      view::activateViewport(iSubView);
-      render::engine->setActiveSceneTarget(iSubView);
+    for (int viewportInd = 0; viewportInd < view::getNumViewports(); viewportInd++) {
+      view::activateViewport(viewportInd);
+      render::engine->setActiveSceneTarget(viewportInd);
 
-      view::ViewParameters vp = view::getViewportParameters(iSubView);
+      view::ViewParameters vp = view::getViewportParameters(viewportInd);
       int ssaa = render::engine->getSSAAFactor();
 
       render::engine->setDepthMode(DepthMode::Less); // we need depth to be enabled for the clear below to do anything
@@ -723,11 +723,11 @@ void renderScene() {
       error("there are no viewports");
     }
 
-    for (int iSubView = 0; iSubView < view::getNumViewports(); iSubView++) {
-      view::activateViewport(iSubView);
+    for (int viewportInd = 0; viewportInd < view::getNumViewports(); viewportInd++) {
+      view::activateViewport(viewportInd);
       view::ensureViewValid();
       view::updateFlight();
-      render::engine->setActiveSceneTarget(iSubView); // sets sceneBuffer (etc) to the current target viewport buffer
+      render::engine->setActiveSceneTarget(viewportInd); // sets sceneBuffer (etc) to the current target viewport buffer
 
       render::engine->sceneBuffer->clearColor = {0., 0., 0.};
       render::engine->sceneBuffer->clearAlpha = 0.;
@@ -746,7 +746,7 @@ void renderScene() {
       render::engine->applyTransparencySettings();
       drawStructuresDelayed();
 
-      view::ViewParameters vp = view::getViewportParameters(iSubView);
+      view::ViewParameters vp = view::getViewportParameters(viewportInd);
       int ssaaFactor = render::engine->getSSAAFactor();
       render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), ssaaFactor * vp.viewportPosX,
                                           ssaaFactor * vp.viewportPosY);

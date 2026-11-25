@@ -11,27 +11,27 @@
 namespace polyscope {
 
 PickResult pickAtScreenCoords(glm::vec2 screenCoords) {
-  int32_t iViewport = view::screenCoordsToViewportInd(screenCoords);
+  int32_t viewportInd = view::screenCoordsToViewportInd(screenCoords);
   int32_t prevViewport = view::getActiveViewportIndex();
-  view::activateViewport(iViewport);
-  glm::ivec2 localBufferInds = view::screenCoordsToBufferIndsVecViewport(screenCoords, iViewport);
+  view::activateViewport(viewportInd);
+  glm::ivec2 localBufferInds = view::screenCoordsToBufferIndsVecViewport(screenCoords, viewportInd);
   PickResult result = pickAtBufferInds(localBufferInds);
   view::activateViewport(prevViewport);
   return result;
 }
 
-PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t iSubView) {
+PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t viewportInd) {
   int32_t prevViewport = view::getActiveViewportIndex();
-  view::activateViewport(iSubView);
+  view::activateViewport(viewportInd);
   glm::ivec2 localBufferInds = view::screenCoordsToBufferIndsVec(screenCoords);
   PickResult result = pickAtBufferInds(localBufferInds);
   view::activateViewport(prevViewport);
   return result;
 }
 
-PickResult pickViewportAtBufferInds(glm::ivec2 bufferInds, int32_t iSubView) {
+PickResult pickViewportAtBufferInds(glm::ivec2 bufferInds, int32_t viewportInd) {
   int32_t prevViewport = view::getActiveViewportIndex();
-  view::activateViewport(iSubView);
+  view::activateViewport(viewportInd);
   PickResult result = pickAtBufferInds(bufferInds); // no need to convert inds: already local to the viewport
   view::activateViewport(prevViewport);
   return result;

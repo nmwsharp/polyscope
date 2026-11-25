@@ -54,12 +54,12 @@ void Structure::addToGroup(std::string groupName) { addToGroup(*getGroup(groupNa
 
 void Structure::addToGroup(Group& group) { group.addChildStructure(*this); }
 
-void Structure::setViewportVisibility(int32_t iViewport, bool visible) {
+void Structure::setViewportVisibility(int32_t viewportInd, bool visible) {
   uint64_t mask = viewportVisibilityMask.get();
   if (visible) {
-    mask |= (uint64_t(1) << iViewport);
+    mask |= (uint64_t(1) << viewportInd);
   } else {
-    mask &= ~(uint64_t(1) << iViewport);
+    mask &= ~(uint64_t(1) << viewportInd);
   }
   viewportVisibilityMask = mask;
   requestRedraw();
@@ -70,14 +70,14 @@ void Structure::setViewportVisibilityAll(bool visible) {
   requestRedraw();
 }
 
-void Structure::setViewportVisibilityExclusive(int32_t iViewport) {
-  viewportVisibilityMask = uint64_t(1) << iViewport;
+void Structure::setViewportVisibilityExclusive(int32_t viewportInd) {
+  viewportVisibilityMask = uint64_t(1) << viewportInd;
   requestRedraw();
 }
 
-bool Structure::getViewportVisibility(int32_t iViewport) {
-  if (iViewport < 0) iViewport = view::getActiveViewportIndex();
-  return (viewportVisibilityMask.get() >> iViewport) & uint64_t(1);
+bool Structure::getViewportVisibility(int32_t viewportInd) {
+  if (viewportInd < 0) viewportInd = view::getActiveViewportIndex();
+  return (viewportVisibilityMask.get() >> viewportInd) & uint64_t(1);
 }
 
 

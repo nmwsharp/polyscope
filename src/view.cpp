@@ -147,27 +147,27 @@ glm::vec2 bufferIndsToScreenCoordsViewport(glm::ivec2 bufferInds, int32_t viewpo
 }
 
 std::tuple<glm::vec2, int32_t> screenCoordsGlobalToViewport(glm::vec2 screenCoords) {
-  int32_t iViewport = screenCoordsToViewportInd(screenCoords);
-  glm::ivec2 localInds = screenCoordsToBufferIndsVecViewport(screenCoords, iViewport);
+  int32_t viewportInd = screenCoordsToViewportInd(screenCoords);
+  glm::ivec2 localInds = screenCoordsToBufferIndsVecViewport(screenCoords, viewportInd);
   glm::vec2 localCoords = bufferIndsToScreenCoords(localInds);
-  return {localCoords, iViewport};
+  return {localCoords, viewportInd};
 }
 
 std::tuple<glm::ivec2, int32_t> bufferIndsGlobalToViewport(glm::ivec2 bufferInds) {
-  int32_t iViewport = bufferIndsToViewportInd(bufferInds);
-  glm::ivec2 localInds = screenCoordsToBufferIndsVecViewport(bufferIndsToScreenCoords(bufferInds), iViewport);
-  return {localInds, iViewport};
+  int32_t viewportInd = bufferIndsToViewportInd(bufferInds);
+  glm::ivec2 localInds = screenCoordsToBufferIndsVecViewport(bufferIndsToScreenCoords(bufferInds), viewportInd);
+  return {localInds, viewportInd};
 }
 
-glm::vec2 screenCoordsViewportToGlobal(glm::vec2 screenCoords, int32_t iViewport) {
+glm::vec2 screenCoordsViewportToGlobal(glm::vec2 screenCoords, int32_t viewportInd) {
   glm::ivec2 localInds = screenCoordsToBufferIndsVec(screenCoords);
-  glm::vec2 globalScreenCoords = bufferIndsToScreenCoordsViewport(localInds.x, localInds.y, iViewport);
+  glm::vec2 globalScreenCoords = bufferIndsToScreenCoordsViewport(localInds.x, localInds.y, viewportInd);
   return globalScreenCoords;
 }
 
-glm::ivec2 bufferIndsViewportToGlobal(glm::ivec2 bufferInds, int32_t iViewport) {
-  if (iViewport < 0) iViewport = getActiveViewportIndex();
-  const ViewParameters& vp = getViewportParameters(iViewport);
+glm::ivec2 bufferIndsViewportToGlobal(glm::ivec2 bufferInds, int32_t viewportInd) {
+  if (viewportInd < 0) viewportInd = getActiveViewportIndex();
+  const ViewParameters& vp = getViewportParameters(viewportInd);
   int svTopFromTopBuf = bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
   return glm::ivec2(vp.viewportPosX + bufferInds.x, svTopFromTopBuf + bufferInds.y);
 }

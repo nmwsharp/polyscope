@@ -135,10 +135,10 @@ public:
 
   // Viewport visibility
   // If true, the structure (and any of its quantities) are visible on the i'th viewport
-  void setViewportVisibility(int32_t iViewport, bool assigned);
+  void setViewportVisibility(int32_t viewportInd, bool assigned);
   void setViewportVisibilityAll(bool assigned);          // set visibility true/false for all viewports
-  void setViewportVisibilityExclusive(int32_t iViewport); // only visible in the i'th viewport
-  bool getViewportVisibility(int32_t iViewport = -1);     // test visibility for the i'th viewport,
+  void setViewportVisibilityExclusive(int32_t viewportInd); // only visible in the i'th viewport
+  bool getViewportVisibility(int32_t viewportInd = -1);     // test visibility for the i'th viewport,
                                                         // -1 means currently active viewport
 
   // ====================================================================

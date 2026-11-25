@@ -182,7 +182,7 @@ glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clip
 // Get and set camera from json string
 std::string getViewAsJson();
 void setViewFromJson(std::string jsonData, bool flyTo);
-std::string getCameraJson(); // DEPRACTED: old names for avove
+std::string getCameraJson(); // DEPRECATED: old names for above
 void setCameraFromJson(std::string jsonData, bool flyTo);
 // TODO add functions to serialize all viewports at once
 
@@ -211,7 +211,7 @@ std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
 
 // Viewport-local versions of the above. Buffer indices and screen coords here are relative to the
 // viewport's own origin (not the global window). Pass viewportInd=-1 to use the current active viewport.
-// See note above for definition: buffer indices and screen coordinates have differnt scales and origins.
+// See note above for definition: buffer indices and screen coordinates have different scales and origins.
 glm::vec2 bufferIndsToScreenCoordsViewport(int xPos, int yPos, int32_t viewportInd = -1);
 glm::vec2 bufferIndsToScreenCoordsViewport(glm::ivec2 bufferInds, int32_t viewportInd = -1);
 glm::ivec2 screenCoordsToBufferIndsVecViewport(glm::vec2 screenCoords, int32_t viewportInd = -1);
@@ -227,8 +227,8 @@ std::tuple<glm::vec2, int32_t> screenCoordsGlobalToViewport(glm::vec2 screenCoor
 std::tuple<glm::ivec2, int32_t> bufferIndsGlobalToViewport(glm::ivec2 bufferInds);
 
 // Given screen coordinates / buffer inds within a viewport, return the corresponding coordinates in whole window.
-glm::vec2 screenCoordsViewportToGlobal(glm::vec2 screenCoords, int32_t iViewport);
-glm::ivec2 bufferIndsViewportToGlobal(glm::ivec2 bufferInds, int32_t iViewport);
+glm::vec2 screenCoordsViewportToGlobal(glm::vec2 screenCoords, int32_t viewportInd);
+glm::ivec2 bufferIndsViewportToGlobal(glm::ivec2 bufferInds, int32_t viewportInd);
 
 
 // == Viewport helpers
@@ -256,7 +256,7 @@ int getActiveViewportBufferHeight();
 glm::vec4 getViewportImGuiRect(int32_t viewportInd = -1);
 
 // Get a reference to the view parameters for a specific viewport, -1 means the active viewport.
-const view::ViewParameters& getViewportParameters(int32_t iViewport = -1);
+const view::ViewParameters& getViewportParameters(int32_t viewportInd = -1);
 
 // If true, all viewports share the same camera and rotation/translation/zoom etc applies
 // to all views simultaneously. If false, each viewport has its own independent camera and navigation state.
