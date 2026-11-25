@@ -28,7 +28,7 @@ jobs:
         submodules: true
 
     - name: install packages
-      run: sudo apt-get update && sudo apt-get install -y xorg-dev libglu1-mesa-dev xpra xserver-xorg-video-dummy freeglut3-dev
+      run: sudo apt-get update && sudo apt-get install -y xorg-dev libglu1-mesa-dev libegl-dev libgl1-mesa-dri
 
     - name: configure
       run: cd test && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON ..
@@ -65,7 +65,7 @@ jobs:
         submodules: true
 
     - name: install packages
-      run: sudo apt-get update && sudo apt-get install -y xorg-dev libglu1-mesa-dev xpra xserver-xorg-video-dummy freeglut3-dev
+      run: sudo apt-get update && sudo apt-get install -y xorg-dev libglu1-mesa-dev libegl-dev libgl1-mesa-dri
 
     - name: configure
       run: cd test && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=TRUE -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON -DPOLYSCOPE_BACKEND_OPENGL3_EGL=ON ..
