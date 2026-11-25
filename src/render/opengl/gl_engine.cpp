@@ -1115,7 +1115,7 @@ std::vector<unsigned char> GLFrameBuffer::readBuffer() {
   return buff;
 }
 
-void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
+void GLFrameBuffer::blitTo(FrameBuffer* targetIn, int targetPosX, int targetPosY) {
 
   // it _better_ be a GL buffer
   GLFrameBuffer* target = dynamic_cast<GLFrameBuffer*>(targetIn);
@@ -1125,8 +1125,8 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
   bindForRendering();
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->getHandle());
 
-  glBlitFramebuffer(0, 0, getSizeX(), getSizeY(), 0, 0, target->getSizeX(), target->getSizeY(), GL_COLOR_BUFFER_BIT,
-                    GL_LINEAR);
+  glBlitFramebuffer(0, 0, getSizeX(), getSizeY(), targetPosX, targetPosY, targetPosX + getSizeX(),
+                    targetPosY + getSizeY(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
   checkGLError();
 }
 
