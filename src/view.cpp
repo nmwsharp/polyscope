@@ -146,6 +146,32 @@ glm::vec2 bufferIndsToScreenCoordsSubview(glm::ivec2 bufferInds, int32_t subview
   return bufferIndsToScreenCoordsSubview(bufferInds.x, bufferInds.y, subviewInd);
 }
 
+std::tuple<glm::vec2, int32_t> screenCoordsGlobalToSubview(glm::vec2 screenCoords) {
+  int32_t iSubview = screenCoordsToSubviewInd(screenCoords);
+  glm::ivec2 localInds = screenCoordsToBufferIndsVecSubview(screenCoords, iSubview);
+  glm::vec2 localCoords = bufferIndsToScreenCoords(localInds);
+  return {localCoords, iSubview};
+}
+
+std::tuple<glm::ivec2, int32_t> bufferIndsGlobalToSubview(glm::ivec2 bufferInds) {
+  int32_t iSubview = bufferIndsToSubviewInd(bufferInds);
+  glm::ivec2 localInds = screenCoordsToBufferIndsVecSubview(bufferIndsToScreenCoords(bufferInds), iSubview);
+  return {localInds, iSubview};
+}
+
+glm::vec2 screenCoordsSubviewToGlobal(glm::vec2 screenCoords, int32_t iSubview) {
+  glm::ivec2 localInds = screenCoordsToBufferIndsVec(screenCoords);
+  glm::vec2 globalScreenCoords = bufferIndsToScreenCoordsSubview(localInds.x, localInds.y, iSubview);
+  return globalScreenCoords;
+}
+
+glm::ivec2 bufferIndsSubviewToGlobal(glm::ivec2 bufferInds, int32_t iSubview) {
+  if (iSubview < 0) iSubview = getActiveSubviewIndex();
+  const ViewParameters& vp = getSubviewParameters(iSubview);
+  int svTopFromTopBuf = bufferHeight - vp.subviewPosY - vp.subviewBufferHeight;
+  return glm::ivec2(vp.subviewPosX + bufferInds.x, svTopFromTopBuf + bufferInds.y);
+}
+
 int32_t bufferIndsToSubviewInd(glm::ivec2 bufferInds) {
   for (int32_t i = getNumSubviews() - 1; i >= 0; i--) {
     // go back-to-front, so we report the topmost matching subview
@@ -914,8 +940,8 @@ glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords, int32_t subviewInd) {
   return worldRayDir;
 }
 
-glm::vec3 bufferIndsToWorldRay(glm::vec2 bufferInds, int32_t subviewInd) {
-  return bufferCoordsToWorldRay(bufferInds, subviewInd);
+glm::vec3 bufferIndsToWorldRay(glm::ivec2 bufferInds, int32_t subviewInd) {
+  return bufferCoordsToWorldRay(glm::vec2(bufferInds), subviewInd);
 }
 
 glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t subviewInd) {

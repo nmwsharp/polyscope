@@ -347,6 +347,58 @@ TEST_F(PolyscopeTest, SubviewProjectionMode) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SubviewCoordinates) {
+  polyscope::view::setWindowSize(800, 600);
+  polyscope::show(3); // ensure buffer is sized
+
+  polyscope::view::createSubviewGrid(2, 1); // left/right halves
+  polyscope::show(3);
+
+  int bufW = polyscope::view::bufferWidth;
+  int bufH = polyscope::view::bufferHeight;
+
+  // --- bufferIndsToScreenCoords / screenCoordsToBufferInds are inverses ---
+  glm::ivec2 bi{bufW / 4, bufH / 4};
+  glm::vec2 sc = polyscope::view::bufferIndsToScreenCoords(bi);
+  auto [rx, ry] = polyscope::view::screenCoordsToBufferInds(sc);
+  EXPECT_EQ(rx, bi.x);
+  EXPECT_EQ(ry, bi.y);
+
+  // --- subview-local round-trip: buffer inds → screen coords → buffer inds ---
+  glm::ivec2 localBi{10, 20};
+  glm::vec2 localSc = polyscope::view::bufferIndsToScreenCoordsSubview(localBi, 0);
+  auto [lx, ly] = polyscope::view::screenCoordsToBufferIndsSubview(localSc, 0);
+  EXPECT_EQ(lx, localBi.x);
+  EXPECT_EQ(ly, localBi.y);
+
+  // --- globalToSubview / subviewToGlobal are inverses (screen coords) ---
+  glm::vec2 globalSc = polyscope::view::bufferIndsToScreenCoords(bi);
+  auto [localSc2, iSubview] = polyscope::view::screenCoordsGlobalToSubview(globalSc);
+  glm::vec2 recoveredSc = polyscope::view::screenCoordsSubviewToGlobal(localSc2, iSubview);
+  EXPECT_NEAR(recoveredSc.x, globalSc.x, 1e-4f);
+  EXPECT_NEAR(recoveredSc.y, globalSc.y, 1e-4f);
+
+  // --- globalToSubview / subviewToGlobal are inverses (buffer inds) ---
+  auto [localBi2, iSubview2] = polyscope::view::bufferIndsGlobalToSubview(bi);
+  glm::ivec2 recoveredBi = polyscope::view::bufferIndsSubviewToGlobal(localBi2, iSubview2);
+  EXPECT_EQ(recoveredBi.x, bi.x);
+  EXPECT_EQ(recoveredBi.y, bi.y);
+
+  // --- screenCoordsToSubviewInd and bufferIndsToSubviewInd agree ---
+  glm::vec2 testSc = polyscope::view::bufferIndsToScreenCoords(bi);
+  int32_t indFromSc = polyscope::view::screenCoordsToSubviewInd(testSc);
+  int32_t indFromBi = polyscope::view::bufferIndsToSubviewInd(bi);
+  EXPECT_EQ(indFromSc, indFromBi);
+
+  // --- point in left half should be subview 0, right half subview 1 ---
+  glm::ivec2 leftBi{bufW / 4, bufH / 2};
+  glm::ivec2 rightBi{3 * bufW / 4, bufH / 2};
+  EXPECT_EQ(polyscope::view::bufferIndsToSubviewInd(leftBi), 0);
+  EXPECT_EQ(polyscope::view::bufferIndsToSubviewInd(rightBi), 1);
+
+  polyscope::view::createSubviewGrid(1, 1); // restore
+}
+
 TEST_F(PolyscopeTest, UIScale) {
 
   // this should trigger a reload of the font atlas
