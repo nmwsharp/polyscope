@@ -490,7 +490,7 @@ void Engine::clearDisplay() {
 void Engine::clearSceneBuffer() { sceneBuffer->clear(); }
 
 void Engine::resizeScreenBuffersAndSetViewports() {
-  view::updateSubviewDimensions();
+  view::updateViewportDimensions();
   unsigned int width = view::bufferWidth;
   unsigned int height = view::bufferHeight;
   displayBuffer->resize(width, height);
@@ -502,13 +502,13 @@ void Engine::resizeScreenBuffersAndSetViewports() {
   sceneBufferFinal->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
 
   for (size_t i = 0; i < sceneBufferTargets.size(); i++) {
-    view::ViewParameters vp = view::getSubviewParameters(i);
+    view::ViewParameters vp = view::getViewportParameters(i);
 
-    sceneBufferTargets[i]->resize(ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
-    sceneDepthMinFrameTargets[i]->resize(ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
+    sceneBufferTargets[i]->resize(ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
+    sceneDepthMinFrameTargets[i]->resize(ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
 
-    sceneBufferTargets[i]->setViewport(0, 0, ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
-    sceneDepthMinFrameTargets[i]->setViewport(0, 0, ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
+    sceneBufferTargets[i]->setViewport(0, 0, ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
+    sceneDepthMinFrameTargets[i]->setViewport(0, 0, ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
   }
 }
 

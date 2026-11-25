@@ -14,7 +14,7 @@ namespace polyscope {
 
 Structure::Structure(std::string name_, std::string subtypeName_)
     : name(name_), subtypeName(subtypeName_), enabled(subtypeName + "#" + name + "#enabled", true),
-      subviewVisibilityMask(subtypeName + "#" + name + "#subviewVisibilityMask", ~uint64_t(0)),
+      viewportVisibilityMask(subtypeName + "#" + name + "#viewportVisibilityMask", ~uint64_t(0)),
       objectTransform(subtypeName + "#" + name + "#object_transform", glm::mat4(1.0)),
       transparency(subtypeName + "#" + name + "#transparency", 1.0),
       transformGizmo(subtypeName + "#" + name + "#transform_gizmo", &objectTransform.get(), &objectTransform),
@@ -54,30 +54,30 @@ void Structure::addToGroup(std::string groupName) { addToGroup(*getGroup(groupNa
 
 void Structure::addToGroup(Group& group) { group.addChildStructure(*this); }
 
-void Structure::setSubviewVisibility(int32_t iSubview, bool visible) {
-  uint64_t mask = subviewVisibilityMask.get();
+void Structure::setViewportVisibility(int32_t iViewport, bool visible) {
+  uint64_t mask = viewportVisibilityMask.get();
   if (visible) {
-    mask |= (uint64_t(1) << iSubview);
+    mask |= (uint64_t(1) << iViewport);
   } else {
-    mask &= ~(uint64_t(1) << iSubview);
+    mask &= ~(uint64_t(1) << iViewport);
   }
-  subviewVisibilityMask = mask;
+  viewportVisibilityMask = mask;
   requestRedraw();
 }
 
-void Structure::setSubviewVisibilityAll(bool visible) {
-  subviewVisibilityMask = visible ? ~uint64_t(0) : uint64_t(0);
+void Structure::setViewportVisibilityAll(bool visible) {
+  viewportVisibilityMask = visible ? ~uint64_t(0) : uint64_t(0);
   requestRedraw();
 }
 
-void Structure::setSubviewVisibilityExclusive(int32_t iSubview) {
-  subviewVisibilityMask = uint64_t(1) << iSubview;
+void Structure::setViewportVisibilityExclusive(int32_t iViewport) {
+  viewportVisibilityMask = uint64_t(1) << iViewport;
   requestRedraw();
 }
 
-bool Structure::getSubviewVisibility(int32_t iSubview) {
-  if (iSubview < 0) iSubview = view::getActiveSubviewIndex();
-  return (subviewVisibilityMask.get() >> iSubview) & uint64_t(1);
+bool Structure::getViewportVisibility(int32_t iViewport) {
+  if (iViewport < 0) iViewport = view::getActiveViewportIndex();
+  return (viewportVisibilityMask.get() >> iViewport) & uint64_t(1);
 }
 
 
@@ -159,15 +159,15 @@ void Structure::buildUI() {
         ImGui::EndMenu();
       }
 
-      // Subview visibility (only shown when multiple subviews exist)
-      int nSubviews = view::getNumSubviews();
-      if (nSubviews > 1 && ImGui::BeginMenu("Subview Visibility")) {
-        if (ImGui::MenuItem("Show in all")) setSubviewVisibilityAll(true);
-        if (ImGui::MenuItem("Hide in all")) setSubviewVisibilityAll(false);
+      // Viewport visibility (only shown when multiple viewports exist)
+      int nViewports = view::getNumViewports();
+      if (nViewports > 1 && ImGui::BeginMenu("Viewport Visibility")) {
+        if (ImGui::MenuItem("Show in all")) setViewportVisibilityAll(true);
+        if (ImGui::MenuItem("Hide in all")) setViewportVisibilityAll(false);
         ImGui::Separator();
-        for (int i = 0; i < nSubviews; i++) {
-          bool vis = getSubviewVisibility(i);
-          if (ImGui::MenuItem(("Subview " + std::to_string(i)).c_str(), NULL, vis)) setSubviewVisibility(i, !vis);
+        for (int i = 0; i < nViewports; i++) {
+          bool vis = getViewportVisibility(i);
+          if (ImGui::MenuItem(("Viewport " + std::to_string(i)).c_str(), NULL, vis)) setViewportVisibility(i, !vis);
         }
         ImGui::EndMenu();
       }
@@ -332,7 +332,7 @@ void Structure::setStructureUniforms(render::ShaderProgram& p) {
       p.setUniform("u_viewportDim", viewportDim);
     }
 
-    // Attach the min depth texture, if needed (rebind each draw since sceneDepthMin changes per-subview)
+    // Attach the min depth texture, if needed (rebind each draw since sceneDepthMin changes per-viewport)
     if (render::engine->transparencyEnabled() && p.hasTexture("t_minDepth")) {
       p.setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
     }

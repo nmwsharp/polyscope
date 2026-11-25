@@ -652,13 +652,13 @@ public:
   std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal; // TODO rename the 'final' one
   std::vector<std::shared_ptr<FrameBuffer>> sceneBufferTargets;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
-  std::shared_ptr<FrameBuffer> sceneDepthMinFrame;             // per-subview; set by setActiveSceneTarget
+  std::shared_ptr<FrameBuffer> sceneDepthMinFrame;             // per-viewport; set by setActiveSceneTarget
   std::vector<std::shared_ptr<FrameBuffer>> sceneDepthMinFrameTargets;
   FrameBuffer& getDisplayBuffer();
 
   // Main buffers for rendering.
-  // sceneColor, sceneDepth, sceneDepthMin, and their corresponding framebuffers are per-subview;
-  // the active subview's versions are exposed as the non-vector members, set by setActiveSceneTarget.
+  // sceneColor, sceneDepth, sceneDepthMin, and their corresponding framebuffers are per-viewport;
+  // the active viewport's versions are exposed as the non-vector members, set by setActiveSceneTarget.
   // sceneColorFinal holds the composited result and remains a single texture.
   std::shared_ptr<TextureBuffer> sceneColorFinal;
   std::shared_ptr<TextureBuffer> sceneColor, sceneDepth, sceneDepthMin;
@@ -682,7 +682,7 @@ public:
   virtual void setFrontFaceCCW(bool newVal) = 0; // true if CCW triangles are considered front-facing; false otherwise
   bool getFrontFaceCCW();
   
-  // A few subview related helpers
+  // A few viewport related helpers
   void setActiveSceneTarget(int activeSceneTargets);
   void ensureSceneTargetsAllocated(int sceneTargetsCount);
 

@@ -247,7 +247,7 @@ void init(std::string backend) {
   internal::contextStackSize++;
 
   view::invalidateView();
-  view::createInitialSubview();
+  view::createInitialViewport();
 
   state::initialized = true;
   state::doDefaultMouseInteraction = true; // NSHARP: why is this here?
@@ -423,7 +423,7 @@ void drawStructures() {
 
   for (auto& catMap : state::structures) {
     for (auto& s : catMap.second) {
-      if(!s.second->getSubviewVisibility()) continue;
+      if(!s.second->getViewportVisibility()) continue;
 
       s.second->draw();
     }
@@ -440,7 +440,7 @@ void drawStructuresDelayed() {
   // drawn
   for (auto& catMap : state::structures) {
     for (auto& s : catMap.second) {
-      if(!s.second->getSubviewVisibility()) continue;
+      if(!s.second->getViewportVisibility()) continue;
 
       s.second->drawDelayed();
     }
@@ -449,7 +449,7 @@ void drawStructuresDelayed() {
 
 namespace {
 
-int interactionSubview = 0;
+int interactionViewport = 0;
 float dragDistSinceLastRelease = 0.0;
 
 // State for delayed pick selection
@@ -486,11 +486,11 @@ void processInputEvents() {
     // === Mouse inputs
     if (!io.WantCaptureMouse && !widgetCapturedMouse) {
 
-      // Activate the subview under the mouse on click (affects widget placement etc, regardless of nav sharing)
+      // Activate the viewport under the mouse on click (affects widget placement etc, regardless of nav sharing)
       if (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1)) {
-        int clickedSubview = view::screenCoordsToSubviewInd({io.MousePos.x, io.MousePos.y});
-        if (clickedSubview != view::getActiveSubviewIndex()) {
-          view::activateSubview(clickedSubview);
+        int clickedViewport = view::screenCoordsToViewportInd({io.MousePos.x, io.MousePos.y});
+        if (clickedViewport != view::getActiveViewportIndex()) {
+          view::activateViewport(clickedViewport);
         }
       }
 
@@ -524,12 +524,12 @@ void processInputEvents() {
         bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
         if (dragLeft || dragRight) {
 
-          // Activate the subview under the initial click
+          // Activate the viewport under the initial click
           {
             ImVec2 clickPos = dragLeft ? io.MouseClickedPos[0] : io.MouseClickedPos[1];
-            int clickedSubview = view::screenCoordsToSubviewInd({clickPos.x, clickPos.y});
-            if (clickedSubview != view::getActiveSubviewIndex()) {
-              view::activateSubview(clickedSubview);
+            int clickedViewport = view::screenCoordsToViewportInd({clickPos.x, clickPos.y});
+            if (clickedViewport != view::getActiveViewportIndex()) {
+              view::activateViewport(clickedViewport);
             }
           }
 
@@ -546,13 +546,13 @@ void processInputEvents() {
             view::processZoom(dragDelta.y * 5);
           }
           if (isRotate) {
-            // Normalize mouse position relative to the active subview for arc-based rotation.
-            // subviewRelativePosY is y-from-bottom (OpenGL); convert to screen y-from-top for svTop.
-            view::ViewParameters svp = view::getSubviewParameters(view::getActiveSubviewIndex());
-            float svLeft = svp.subviewRelativePosX * view::windowWidth;
-            float svTop = (1.0f - svp.subviewRelativePosY - svp.subviewRelativeHeight) * view::windowHeight;
-            glm::vec2 currPos{(io.MousePos.x - svLeft) / svp.subviewWindowWidth,
-                              (svp.subviewWindowHeight - (io.MousePos.y - svTop)) / svp.subviewWindowHeight};
+            // Normalize mouse position relative to the active viewport for arc-based rotation.
+            // viewportRelativePosY is y-from-bottom (OpenGL); convert to screen y-from-top for svTop.
+            view::ViewParameters svp = view::getViewportParameters(view::getActiveViewportIndex());
+            float svLeft = svp.viewportRelativePosX * view::windowWidth;
+            float svTop = (1.0f - svp.viewportRelativePosY - svp.viewportRelativeHeight) * view::windowHeight;
+            glm::vec2 currPos{(io.MousePos.x - svLeft) / svp.viewportWindowWidth,
+                              (svp.viewportWindowHeight - (io.MousePos.y - svTop)) / svp.viewportWindowHeight};
             currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
             view::processRotate(currPos - 2.0f * dragDelta, currPos);
           }
@@ -640,8 +640,8 @@ void renderScene() {
 
   if (!options::renderScene) return;
 
-  // We internally change the active subview to render; save it here so we can restore at the end
-  int savedActiveSubview = view::getActiveSubviewIndex();
+  // We internally change the active viewport to render; save it here so we can restore at the end
+  int savedActiveViewport = view::getActiveViewportIndex();
 
   if (render::engine->getTransparencyMode() == TransparencyMode::Pretty) {
     // Special depth peeling case: multiple render passes
@@ -657,11 +657,11 @@ void renderScene() {
     render::engine->sceneBufferFinal->clearAlpha = 0;
     render::engine->sceneBufferFinal->clear();
 
-    for (int iSubView = 0; iSubView < view::getNumSubviews(); iSubView++) {
-      view::activateSubview(iSubView);
+    for (int iSubView = 0; iSubView < view::getNumViewports(); iSubView++) {
+      view::activateViewport(iSubView);
       render::engine->setActiveSceneTarget(iSubView);
 
-      view::ViewParameters vp = view::getSubviewParameters(iSubView);
+      view::ViewParameters vp = view::getViewportParameters(iSubView);
       int ssaa = render::engine->getSSAAFactor();
 
       render::engine->setDepthMode(DepthMode::Less); // we need depth to be enabled for the clear below to do anything
@@ -691,10 +691,10 @@ void renderScene() {
         drawStructuresDelayed();
 
         // Composite the result of this pass in to the result buffer.
-        // Set the viewport to the subview's region in sceneBufferFinal so the fullscreen quad composites
+        // Set the viewport to the viewport's region in sceneBufferFinal so the fullscreen quad composites
         // only into the correct portion of the final buffer.
-        render::engine->sceneBufferFinal->setViewport(ssaa * vp.subviewPosX, ssaa * vp.subviewPosY,
-                                                      ssaa * vp.subviewBufferWidth, ssaa * vp.subviewBufferHeight);
+        render::engine->sceneBufferFinal->setViewport(ssaa * vp.viewportPosX, ssaa * vp.viewportPosY,
+                                                      ssaa * vp.viewportBufferWidth, ssaa * vp.viewportBufferHeight);
         render::engine->sceneBufferFinal->bindForRendering();
         render::engine->setDepthMode(DepthMode::Disable);
         render::engine->setBlendMode(BlendMode::AlphaUnder);
@@ -719,15 +719,15 @@ void renderScene() {
 
     internal::renderPassIsRedraw = false;
 
-    if (view::getNumSubviews() == 0) {
-      error("there are no subviews");
+    if (view::getNumViewports() == 0) {
+      error("there are no viewports");
     }
 
-    for (int iSubView = 0; iSubView < view::getNumSubviews(); iSubView++) {
-      view::activateSubview(iSubView);
+    for (int iSubView = 0; iSubView < view::getNumViewports(); iSubView++) {
+      view::activateViewport(iSubView);
       view::ensureViewValid();
       view::updateFlight();
-      render::engine->setActiveSceneTarget(iSubView); // sets sceneBuffer (etc) to the current target subview buffer
+      render::engine->setActiveSceneTarget(iSubView); // sets sceneBuffer (etc) to the current target viewport buffer
 
       render::engine->sceneBuffer->clearColor = {0., 0., 0.};
       render::engine->sceneBuffer->clearAlpha = 0.;
@@ -746,15 +746,15 @@ void renderScene() {
       render::engine->applyTransparencySettings();
       drawStructuresDelayed();
 
-      view::ViewParameters vp = view::getSubviewParameters(iSubView);
+      view::ViewParameters vp = view::getViewportParameters(iSubView);
       int ssaaFactor = render::engine->getSSAAFactor();
-      render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), ssaaFactor * vp.subviewPosX,
-                                          ssaaFactor * vp.subviewPosY);
+      render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), ssaaFactor * vp.viewportPosX,
+                                          ssaaFactor * vp.viewportPosY);
     }
   }
 
-  // restore the active subview as it was before the render call
-  view::activateSubview(savedActiveSubview);
+  // restore the active viewport as it was before the render call
+  view::activateViewport(savedActiveViewport);
 }
 
 void renderSceneToScreen() {
@@ -963,7 +963,7 @@ void buildPolyscopeGui() {
       refresh();
     }
 
-    ImGui::Text("Active subview: %d / %d", view::getActiveSubviewIndex(), view::getNumSubviews());
+    ImGui::Text("Active viewport: %d / %d", view::getActiveViewportIndex(), view::getNumViewports());
 
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
     ImGui::Checkbox("Always redraw", &options::alwaysRedraw);
@@ -971,8 +971,8 @@ void buildPolyscopeGui() {
     static bool showDebugTextures = false;
     ImGui::Checkbox("Show debug textures", &showDebugTextures);
     if (showDebugTextures) {
-      for (int32_t i = 0; i < view::getNumSubviews(); i++) {
-        render::engine->showTextureInImGuiWindow("Subview " + std::to_string(i),
+      for (int32_t i = 0; i < view::getNumViewports(); i++) {
+        render::engine->showTextureInImGuiWindow("Viewport " + std::to_string(i),
                                                  render::engine->sceneColorTargets[i].get());
       }
 
@@ -1229,7 +1229,7 @@ void mainLoopIteration() {
 void show(size_t forFrames) {
 
   checkInitialized();
-  view::validateSubviews();
+  view::validateViewports();
 
   if (isHeadless() && forFrames == 0) {
     info("You called show() while in headless mode. In headless mode there is no display to create windows on. By "
@@ -1314,7 +1314,7 @@ void shutdown(bool allowMidFrameShutdown) {
   }
 
   removeEverything();
-  view::clearSubviews();
+  view::clearViewports();
 
   // Shut down the render engine
   render::engine->shutdown();

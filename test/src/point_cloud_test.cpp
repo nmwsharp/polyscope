@@ -31,10 +31,10 @@ TEST_F(PolyscopeTest, ShowPointCloud) {
   EXPECT_TRUE(polyscope::hasPointCloud("test1"));
   EXPECT_FALSE(polyscope::hasPointCloud("test2"));
 
-  // render with subviews
-  polyscope::view::createSubviewGrid(2, 1);
+  // render with viewports
+  polyscope::view::createViewportGrid(2, 1);
   polyscope::show(3);
-  polyscope::view::createSubviewGrid(1, 1);
+  polyscope::view::createViewportGrid(1, 1);
 
   polyscope::removeAllStructures();
   EXPECT_FALSE(polyscope::hasPointCloud("test1"));
@@ -97,12 +97,12 @@ TEST_F(PolyscopeTest, PointCloudPick) {
   polyscope::pickAtBufferInds(glm::ivec2(77, 88));
   polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
 
-  // pick with subviews
-  polyscope::view::createSubviewGrid(2, 1);
+  // pick with viewports
+  polyscope::view::createViewportGrid(2, 1);
   polyscope::show(3);
-  polyscope::pickSubviewAtBufferInds(glm::ivec2(10, 10), 0);
-  polyscope::pickSubviewAtBufferInds(glm::ivec2(10, 10), 1);
-  polyscope::view::createSubviewGrid(1, 1);
+  polyscope::pickViewportAtBufferInds(glm::ivec2(10, 10), 0);
+  polyscope::pickViewportAtBufferInds(glm::ivec2(10, 10), 1);
+  polyscope::view::createViewportGrid(1, 1);
 
   polyscope::removeAllStructures();
 }
@@ -280,12 +280,12 @@ TEST_F(PolyscopeTest, PointCloudScalarTransparency) {
   polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
   polyscope::show(3);
 
-  // render transparency with subviews
-  polyscope::view::createSubviewGrid(2, 1);
+  // render transparency with viewports
+  polyscope::view::createViewportGrid(2, 1);
   polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
   polyscope::show(3);
   polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
-  polyscope::view::createSubviewGrid(1, 1);
+  polyscope::view::createViewportGrid(1, 1);
 
   polyscope::removeAllStructures();
 }

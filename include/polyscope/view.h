@@ -79,7 +79,7 @@ extern const float defaultFarClipRatio;
 extern const float defaultFov;
 
 // Internal details
-extern int& activeSubviewIndex;
+extern int& activeViewportIndex;
 extern bool overrideClipPlanes; // used for temporary state changes in render passes, internal use only!
 extern float overrideNearClipRelative;
 extern float overrideFarClipRelative;
@@ -88,8 +88,8 @@ extern float overrideFarClipRelative;
 
 // == Get/Set the current camera view in the user's window
 
-// If using subviews, whenever not specified, all functions apply to the current
-// active subview.
+// If using viewports, whenever not specified, all functions apply to the current
+// active viewport.
 
 // Get various camera matrices and data for the current view
 CameraParameters getCameraParametersForCurrentView(); // contains all of this info
@@ -141,8 +141,8 @@ void immediatelyEndFlight();
 
 // == Properties of the view/window
 
-// If using subviews, whenever not specified, all functions apply to the current
-// active subview.
+// If using viewports, whenever not specified, all functions apply to the current
+// active viewport.
 
 // Set the size of the OS window
 // Set in logical pixels, which might be different from actual buffer pixels on
@@ -171,20 +171,20 @@ bool getWindowResizable();
 
 // == Utility functions related to the view
 
-// If using subviews, whenever not specified, all functions apply to the current
-// active subview.
+// If using viewports, whenever not specified, all functions apply to the current
+// active viewport.
 
 // Get world geometry corresponding to a screen pixel (e.g. from a mouse click)
-glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords, int32_t subviewInd = -1);
-glm::vec3 bufferIndsToWorldRay(glm::ivec2 bufferInds, int32_t subviewInd = -1);
-glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth, int32_t subviewInd = -1);
+glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords, int32_t viewportInd = -1);
+glm::vec3 bufferIndsToWorldRay(glm::ivec2 bufferInds, int32_t viewportInd = -1);
+glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth, int32_t viewportInd = -1);
 
 // Get and set camera from json string
 std::string getViewAsJson();
 void setViewFromJson(std::string jsonData, bool flyTo);
 std::string getCameraJson(); // DEPRACTED: old names for avove
 void setCameraFromJson(std::string jsonData, bool flyTo);
-// TODO add functions to serialize all subviews at once
+// TODO add functions to serialize all viewports at once
 
 // == Misc helpers
 
@@ -196,79 +196,79 @@ void setCameraFromJson(std::string jsonData, bool flyTo);
 //                                         Used by ImGui (io.MousePos), window/widget layout.
 //
 //   Buffer indices (glm::ivec2, int)    — physical pixels, y=0 at BOTTOM, y increases upward.
-//                                         Used by OpenGL framebuffers, ViewParameters::subviewPosY.
+//                                         Used by OpenGL framebuffers, ViewParameters::viewportPosY.
 //
 // High-DPI (e.g. MacOS Retina) machines have a scale factor >1: each 1.0 screen-coord unit spans multiple buffer
-// pixels. ViewParameters::subviewRelativePosY and subviewPosY are in BUFFER (y-from-bottom) convention. All functions
+// pixels. ViewParameters::viewportRelativePosY and viewportPosY are in BUFFER (y-from-bottom) convention. All functions
 // below state which convention their arguments and return values use.
 
 // Convert between buffer indices and screen coords (see definition above) for the full window.
-// When using subviews, these operate on global window coordinates, not subview-local coordinates.
+// When using viewports, these operate on global window coordinates, not viewport-local coordinates.
 glm::vec2 bufferIndsToScreenCoords(int xPos, int yPos); // buffer → screen
 glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds);
 glm::ivec2 screenCoordsToBufferIndsVec(glm::vec2 screenCoords); // screen → buffer
 std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
 
-// Subview-local versions of the above. Buffer indices and screen coords here are relative to the
-// subview's own origin (not the global window). Pass subviewInd=-1 to use the current active subview.
+// Viewport-local versions of the above. Buffer indices and screen coords here are relative to the
+// viewport's own origin (not the global window). Pass viewportInd=-1 to use the current active viewport.
 // See note above for definition: buffer indices and screen coordinates have differnt scales and origins.
-glm::vec2 bufferIndsToScreenCoordsSubview(int xPos, int yPos, int32_t subviewInd = -1);
-glm::vec2 bufferIndsToScreenCoordsSubview(glm::ivec2 bufferInds, int32_t subviewInd = -1);
-glm::ivec2 screenCoordsToBufferIndsVecSubview(glm::vec2 screenCoords, int32_t subviewInd = -1);
-std::tuple<int, int> screenCoordsToBufferIndsSubview(glm::vec2 screenCoords, int32_t subviewInd = -1);
+glm::vec2 bufferIndsToScreenCoordsViewport(int xPos, int yPos, int32_t viewportInd = -1);
+glm::vec2 bufferIndsToScreenCoordsViewport(glm::ivec2 bufferInds, int32_t viewportInd = -1);
+glm::ivec2 screenCoordsToBufferIndsVecViewport(glm::vec2 screenCoords, int32_t viewportInd = -1);
+std::tuple<int, int> screenCoordsToBufferIndsViewport(glm::vec2 screenCoords, int32_t viewportInd = -1);
 
-// Given screen coordinates / buffer inds on the whole viewport, determine which subview they lie in.
-int32_t screenCoordsToSubviewInd(glm::vec2 screenCoords);
-int32_t bufferIndsToSubviewInd(glm::ivec2 bufferInds);
+// Given screen coordinates / buffer inds on the whole window, determine which viewport they lie in.
+int32_t screenCoordsToViewportInd(glm::vec2 screenCoords);
+int32_t bufferIndsToViewportInd(glm::ivec2 bufferInds);
 
-// Given screen coordinates / buffer inds on the whole viewport, determine which subview they lie in and the local
-// coordinates within that subview. The return tuple is <localCoords, subviewIndex>
-std::tuple<glm::vec2, int32_t> screenCoordsGlobalToSubview(glm::vec2 screenCoords);
-std::tuple<glm::ivec2, int32_t> bufferIndsGlobalToSubview(glm::ivec2 bufferInds);
+// Given screen coordinates / buffer inds on the whole window, determine which viewport they lie in and the local
+// coordinates within that viewport. The return tuple is <localCoords, viewportIndex>
+std::tuple<glm::vec2, int32_t> screenCoordsGlobalToViewport(glm::vec2 screenCoords);
+std::tuple<glm::ivec2, int32_t> bufferIndsGlobalToViewport(glm::ivec2 bufferInds);
 
-// Given screen coordinates / buffer inds within a subview, return the corresponding coordinates in whole window.
-glm::vec2 screenCoordsSubviewToGlobal(glm::vec2 screenCoords, int32_t iSubview);
-glm::ivec2 bufferIndsSubviewToGlobal(glm::ivec2 bufferInds, int32_t iSubview);
+// Given screen coordinates / buffer inds within a viewport, return the corresponding coordinates in whole window.
+glm::vec2 screenCoordsViewportToGlobal(glm::vec2 screenCoords, int32_t iViewport);
+glm::ivec2 bufferIndsViewportToGlobal(glm::ivec2 bufferInds, int32_t iViewport);
 
 
-// == Subview helpers
+// == Viewport helpers
 
-// High-level helper to create a grid of subviews and arrange them in a grid
-void createSubviewGrid(int gridWidth, int gridHeight);
+// High-level helper to create a grid of viewports and arrange them in a grid
+void createViewportGrid(int gridWidth, int gridHeight);
 
-// Manually create subviews and arrange them
-void setNumSubviews(int count);
-void setActiveSubviewRelativeLocation(float posX, float posY); // on [0,1]
-void setActiveSubviewRelativeSize(float width, float height);  // on [0,1]
+// Manually create viewports and arrange them
+void setNumViewports(int count);
+void setActiveViewportRelativeLocation(float posX, float posY); // on [0,1]
+void setActiveViewportRelativeSize(float width, float height);  // on [0,1]
 
-int getNumSubviews();
+int getNumViewports();
 
-// Set the active subview
-void activateSubview(int subviewInd);
-int getActiveSubviewIndex();
+// Set the active viewport
+void activateViewport(int viewportInd);
+int getActiveViewportIndex();
 
-// Get info about the current active subview
-int getActiveSubviewBufferWidth();
-int getActiveSubviewBufferHeight();
+// Get info about the current active viewport
+int getActiveViewportBufferWidth();
+int getActiveViewportBufferHeight();
 
-// Returns {x, y, width, height} of a subview in screen coordinates (see definition above).
-// Pass subviewInd=-1 to use the active subview.
-glm::vec4 getSubviewImGuiRect(int32_t subviewInd = -1);
+// Returns {x, y, width, height} of a viewport in screen coordinates (see definition above).
+// Pass viewportInd=-1 to use the active viewport.
+glm::vec4 getViewportImGuiRect(int32_t viewportInd = -1);
 
-// Get a reference to the view parameters for a specific subview, -1 means the active subview.
-const view::ViewParameters& getSubviewParameters(int32_t iSubview = -1);
+// Get a reference to the view parameters for a specific viewport, -1 means the active viewport.
+const view::ViewParameters& getViewportParameters(int32_t iViewport = -1);
 
-// If true, all subviews share the same camera and rotation/translation/zoom etc applies
-// to all views simultaneously. If false, each subview has its own independent camera and navigation state.
-bool getSubviewsShareNavigation();
-void setSubviewsShareNavigation(bool shareNavigation);
+// If true, all viewports share the same camera and rotation/translation/zoom etc applies
+// to all views simultaneously. If false, each viewport has its own independent camera and navigation state.
+bool getViewportsShareNavigation();
+void setViewportsShareNavigation(bool shareNavigation);
 
-// subview internal helpers
-void createInitialSubview();
-void clearSubviews();
-void validateSubviews();
-void updateSubviewDimensions();
-void propagateViewUpdatesToSubviews();
+// viewport internal helpers
+void createInitialViewport();
+void clearViewports();
+void validateViewports();
+void updateViewportDimensions();
+void propagateViewUpdatesToViewports();
 
 // == Internal helpers. Should probably not be called in user code.
 
@@ -305,7 +305,7 @@ void processSetCenter(glm::vec2 screenCoords);
 std::tuple<float, float> computeClipPlanes();
 
 // deprecated, bad names, see variants above
-glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t subviewInd = -1);
+glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t viewportInd = -1);
 
 
 } // namespace view

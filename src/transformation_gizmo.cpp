@@ -42,12 +42,12 @@ void TransformationGizmo::draw() {
 
   ImGuizmo::PushID(uniquePrefix().c_str());
 
-  glm::vec4 svRect = view::getSubviewImGuiRect();
+  glm::vec4 svRect = view::getViewportImGuiRect();
   ImGuizmo::SetRect(svRect.x, svRect.y, svRect.z, svRect.w);
 
-  // Scale up to compensate for the subview being smaller than the full window.
+  // Scale up to compensate for the viewport being smaller than the full window.
   // ImGuizmo maps clip-space size independently by viewport width and height, so a single scalar
-  // can't match both axes when the subview aspect ratio differs from the full window. The geometric
+  // can't match both axes when the viewport aspect ratio differs from the full window. The geometric
   // mean minimizes the asymmetry between X and Y.
   float fullArea = (float)view::windowWidth * (float)view::windowHeight;
   float svArea = svRect.z * svRect.w;

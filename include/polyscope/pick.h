@@ -42,14 +42,14 @@ struct PickResult {
 
 // Query functions to evaluate a pick.
 // Internally, these do a render pass to populate relevant information, then query the resulting buffers.
-// If using subviews, these assume inputs are on the full screen coordinates of the whole window, and internally
-// route to the appropriate subview.
+// If using viewports, these assume inputs are on the full screen coordinates of the whole window, and internally
+// route to the appropriate viewport.
 PickResult pickAtScreenCoords(glm::vec2 screenCoords); // takes screen coordinates
 PickResult pickAtBufferInds(glm::ivec2 bufferInds);    // takes indices into render buffer
 
-// Subview-explicit pick variants: coordinates are local to the given subview (origin at subview top-left).
-PickResult pickSubviewAtScreenCoords(glm::vec2 screenCoords, int32_t iSubView);
-PickResult pickSubviewAtBufferInds(glm::ivec2 bufferInds, int32_t iSubView);
+// Viewport-explicit pick variants: coordinates are local to the given viewport (origin at viewport top-left).
+PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t iSubView);
+PickResult pickViewportAtBufferInds(glm::ivec2 bufferInds, int32_t iSubView);
 
 // == Stateful picking: track and update a current selection
 

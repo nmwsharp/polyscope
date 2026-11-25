@@ -237,121 +237,121 @@ TEST_F(PolyscopeTest, NavigationMode) {
   polyscope::view::setNavigateStyle(polyscope::NavigateStyle::Turntable); // set back to usual default
 }
 
-TEST_F(PolyscopeTest, SubviewManagement) {
+TEST_F(PolyscopeTest, ViewportManagement) {
   auto psMesh = registerTriangleMesh();
 
   // 2x1 grid
-  polyscope::view::createSubviewGrid(2, 1);
-  EXPECT_EQ(polyscope::view::getNumSubviews(), 2);
+  polyscope::view::createViewportGrid(2, 1);
+  EXPECT_EQ(polyscope::view::getNumViewports(), 2);
   polyscope::show(3);
 
-  // activateSubview / getActiveSubviewIndex
-  polyscope::view::activateSubview(1);
-  EXPECT_EQ(polyscope::view::getActiveSubviewIndex(), 1);
-  polyscope::view::activateSubview(0);
-  EXPECT_EQ(polyscope::view::getActiveSubviewIndex(), 0);
+  // activateViewport / getActiveViewportIndex
+  polyscope::view::activateViewport(1);
+  EXPECT_EQ(polyscope::view::getActiveViewportIndex(), 1);
+  polyscope::view::activateViewport(0);
+  EXPECT_EQ(polyscope::view::getActiveViewportIndex(), 0);
 
   // shared navigation
-  polyscope::view::setSubviewsShareNavigation(true);
-  EXPECT_TRUE(polyscope::view::getSubviewsShareNavigation());
+  polyscope::view::setViewportsShareNavigation(true);
+  EXPECT_TRUE(polyscope::view::getViewportsShareNavigation());
   polyscope::show(3);
 
-  polyscope::view::setSubviewsShareNavigation(false);
-  EXPECT_FALSE(polyscope::view::getSubviewsShareNavigation());
+  polyscope::view::setViewportsShareNavigation(false);
+  EXPECT_FALSE(polyscope::view::getViewportsShareNavigation());
   polyscope::show(3);
 
   // 2x2 grid
-  polyscope::view::createSubviewGrid(2, 2);
-  EXPECT_EQ(polyscope::view::getNumSubviews(), 4);
+  polyscope::view::createViewportGrid(2, 2);
+  EXPECT_EQ(polyscope::view::getNumViewports(), 4);
   polyscope::show(3);
 
-  // back to single subview
-  polyscope::view::createSubviewGrid(1, 1);
-  EXPECT_EQ(polyscope::view::getNumSubviews(), 1);
+  // back to single viewport
+  polyscope::view::createViewportGrid(1, 1);
+  EXPECT_EQ(polyscope::view::getNumViewports(), 1);
   polyscope::show(3);
 
-  polyscope::view::setSubviewsShareNavigation(true); // restore default
+  polyscope::view::setViewportsShareNavigation(true); // restore default
   polyscope::removeAllStructures();
 }
 
-TEST_F(PolyscopeTest, SubviewVisibility) {
+TEST_F(PolyscopeTest, ViewportVisibility) {
   auto psMesh = registerTriangleMesh();
 
-  polyscope::view::createSubviewGrid(2, 2); // 4 subviews
+  polyscope::view::createViewportGrid(2, 2); // 4 viewports
 
-  // default: visible in all subviews
-  for (int i = 0; i < 4; i++) EXPECT_TRUE(psMesh->getSubviewVisibility(i));
+  // default: visible in all viewports
+  for (int i = 0; i < 4; i++) EXPECT_TRUE(psMesh->getViewportVisibility(i));
 
-  // hide in one subview
-  psMesh->setSubviewVisibility(2, false);
-  EXPECT_TRUE(psMesh->getSubviewVisibility(0));
-  EXPECT_TRUE(psMesh->getSubviewVisibility(1));
-  EXPECT_FALSE(psMesh->getSubviewVisibility(2));
-  EXPECT_TRUE(psMesh->getSubviewVisibility(3));
+  // hide in one viewport
+  psMesh->setViewportVisibility(2, false);
+  EXPECT_TRUE(psMesh->getViewportVisibility(0));
+  EXPECT_TRUE(psMesh->getViewportVisibility(1));
+  EXPECT_FALSE(psMesh->getViewportVisibility(2));
+  EXPECT_TRUE(psMesh->getViewportVisibility(3));
 
   // hide all
-  psMesh->setSubviewVisibilityAll(false);
-  for (int i = 0; i < 4; i++) EXPECT_FALSE(psMesh->getSubviewVisibility(i));
+  psMesh->setViewportVisibilityAll(false);
+  for (int i = 0; i < 4; i++) EXPECT_FALSE(psMesh->getViewportVisibility(i));
 
   // show all
-  psMesh->setSubviewVisibilityAll(true);
-  for (int i = 0; i < 4; i++) EXPECT_TRUE(psMesh->getSubviewVisibility(i));
+  psMesh->setViewportVisibilityAll(true);
+  for (int i = 0; i < 4; i++) EXPECT_TRUE(psMesh->getViewportVisibility(i));
 
-  // exclusive: only visible in subview 1
-  psMesh->setSubviewVisibilityExclusive(1);
-  EXPECT_FALSE(psMesh->getSubviewVisibility(0));
-  EXPECT_TRUE(psMesh->getSubviewVisibility(1));
-  EXPECT_FALSE(psMesh->getSubviewVisibility(2));
-  EXPECT_FALSE(psMesh->getSubviewVisibility(3));
+  // exclusive: only visible in viewport 1
+  psMesh->setViewportVisibilityExclusive(1);
+  EXPECT_FALSE(psMesh->getViewportVisibility(0));
+  EXPECT_TRUE(psMesh->getViewportVisibility(1));
+  EXPECT_FALSE(psMesh->getViewportVisibility(2));
+  EXPECT_FALSE(psMesh->getViewportVisibility(3));
 
-  // getSubviewVisibility(-1) uses active subview
-  polyscope::view::activateSubview(1);
-  EXPECT_TRUE(psMesh->getSubviewVisibility(-1));
-  polyscope::view::activateSubview(0);
-  EXPECT_FALSE(psMesh->getSubviewVisibility(-1));
+  // getViewportVisibility(-1) uses active viewport
+  polyscope::view::activateViewport(1);
+  EXPECT_TRUE(psMesh->getViewportVisibility(-1));
+  polyscope::view::activateViewport(0);
+  EXPECT_FALSE(psMesh->getViewportVisibility(-1));
 
   polyscope::show(3);
 
-  polyscope::view::createSubviewGrid(1, 1); // restore
+  polyscope::view::createViewportGrid(1, 1); // restore
   polyscope::removeAllStructures();
 }
 
-TEST_F(PolyscopeTest, SubviewProjectionMode) {
+TEST_F(PolyscopeTest, ViewportProjectionMode) {
   auto psMesh = registerTriangleMesh();
   auto psCloud = polyscope::registerPointCloud("cloud", std::vector<glm::vec3>{{0, 0, 0}, {1, 0, 0}});
 
-  polyscope::view::createSubviewGrid(2, 1); // 2 subviews
-  polyscope::view::setSubviewsShareNavigation(false); // allow independent projection modes
+  polyscope::view::createViewportGrid(2, 1); // 2 viewports
+  polyscope::view::setViewportsShareNavigation(false); // allow independent projection modes
 
-  // default: all subviews start with same projection mode (Perspective)
-  polyscope::view::activateSubview(0);
+  // default: all viewports start with same projection mode (Perspective)
+  polyscope::view::activateViewport(0);
   EXPECT_EQ(polyscope::view::getProjectionMode(), polyscope::ProjectionMode::Perspective);
-  polyscope::view::activateSubview(1);
+  polyscope::view::activateViewport(1);
   EXPECT_EQ(polyscope::view::getProjectionMode(), polyscope::ProjectionMode::Perspective);
 
-  // set subview 1 to orthographic (stateful: set on the active subview)
-  polyscope::view::activateSubview(1);
+  // set viewport 1 to orthographic (stateful: set on the active viewport)
+  polyscope::view::activateViewport(1);
   polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
-  polyscope::view::activateSubview(0);
+  polyscope::view::activateViewport(0);
   EXPECT_EQ(polyscope::view::getProjectionMode(), polyscope::ProjectionMode::Perspective);
-  polyscope::view::activateSubview(1);
+  polyscope::view::activateViewport(1);
   EXPECT_EQ(polyscope::view::getProjectionMode(), polyscope::ProjectionMode::Orthographic);
 
   // render with mixed projection modes
   polyscope::show(3);
 
   // restore
-  polyscope::view::setSubviewsShareNavigation(true);
+  polyscope::view::setViewportsShareNavigation(true);
   polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
-  polyscope::view::createSubviewGrid(1, 1);
+  polyscope::view::createViewportGrid(1, 1);
   polyscope::removeAllStructures();
 }
 
-TEST_F(PolyscopeTest, SubviewCoordinates) {
+TEST_F(PolyscopeTest, ViewportCoordinates) {
   polyscope::view::setWindowSize(800, 600);
   polyscope::show(3); // ensure buffer is sized
 
-  polyscope::view::createSubviewGrid(2, 1); // left/right halves
+  polyscope::view::createViewportGrid(2, 1); // left/right halves
   polyscope::show(3);
 
   int bufW = polyscope::view::bufferWidth;
@@ -364,39 +364,39 @@ TEST_F(PolyscopeTest, SubviewCoordinates) {
   EXPECT_EQ(rx, bi.x);
   EXPECT_EQ(ry, bi.y);
 
-  // --- subview-local round-trip: buffer inds → screen coords → buffer inds ---
+  // --- viewport-local round-trip: buffer inds → screen coords → buffer inds ---
   glm::ivec2 localBi{10, 20};
-  glm::vec2 localSc = polyscope::view::bufferIndsToScreenCoordsSubview(localBi, 0);
-  auto [lx, ly] = polyscope::view::screenCoordsToBufferIndsSubview(localSc, 0);
+  glm::vec2 localSc = polyscope::view::bufferIndsToScreenCoordsViewport(localBi, 0);
+  auto [lx, ly] = polyscope::view::screenCoordsToBufferIndsViewport(localSc, 0);
   EXPECT_EQ(lx, localBi.x);
   EXPECT_EQ(ly, localBi.y);
 
-  // --- globalToSubview / subviewToGlobal are inverses (screen coords) ---
+  // --- globalToViewport / viewportToGlobal are inverses (screen coords) ---
   glm::vec2 globalSc = polyscope::view::bufferIndsToScreenCoords(bi);
-  auto [localSc2, iSubview] = polyscope::view::screenCoordsGlobalToSubview(globalSc);
-  glm::vec2 recoveredSc = polyscope::view::screenCoordsSubviewToGlobal(localSc2, iSubview);
+  auto [localSc2, iViewport] = polyscope::view::screenCoordsGlobalToViewport(globalSc);
+  glm::vec2 recoveredSc = polyscope::view::screenCoordsViewportToGlobal(localSc2, iViewport);
   EXPECT_NEAR(recoveredSc.x, globalSc.x, 1e-4f);
   EXPECT_NEAR(recoveredSc.y, globalSc.y, 1e-4f);
 
-  // --- globalToSubview / subviewToGlobal are inverses (buffer inds) ---
-  auto [localBi2, iSubview2] = polyscope::view::bufferIndsGlobalToSubview(bi);
-  glm::ivec2 recoveredBi = polyscope::view::bufferIndsSubviewToGlobal(localBi2, iSubview2);
+  // --- globalToViewport / viewportToGlobal are inverses (buffer inds) ---
+  auto [localBi2, iViewport2] = polyscope::view::bufferIndsGlobalToViewport(bi);
+  glm::ivec2 recoveredBi = polyscope::view::bufferIndsViewportToGlobal(localBi2, iViewport2);
   EXPECT_EQ(recoveredBi.x, bi.x);
   EXPECT_EQ(recoveredBi.y, bi.y);
 
-  // --- screenCoordsToSubviewInd and bufferIndsToSubviewInd agree ---
+  // --- screenCoordsToViewportInd and bufferIndsToViewportInd agree ---
   glm::vec2 testSc = polyscope::view::bufferIndsToScreenCoords(bi);
-  int32_t indFromSc = polyscope::view::screenCoordsToSubviewInd(testSc);
-  int32_t indFromBi = polyscope::view::bufferIndsToSubviewInd(bi);
+  int32_t indFromSc = polyscope::view::screenCoordsToViewportInd(testSc);
+  int32_t indFromBi = polyscope::view::bufferIndsToViewportInd(bi);
   EXPECT_EQ(indFromSc, indFromBi);
 
-  // --- point in left half should be subview 0, right half subview 1 ---
+  // --- point in left half should be viewport 0, right half viewport 1 ---
   glm::ivec2 leftBi{bufW / 4, bufH / 2};
   glm::ivec2 rightBi{3 * bufW / 4, bufH / 2};
-  EXPECT_EQ(polyscope::view::bufferIndsToSubviewInd(leftBi), 0);
-  EXPECT_EQ(polyscope::view::bufferIndsToSubviewInd(rightBi), 1);
+  EXPECT_EQ(polyscope::view::bufferIndsToViewportInd(leftBi), 0);
+  EXPECT_EQ(polyscope::view::bufferIndsToViewportInd(rightBi), 1);
 
-  polyscope::view::createSubviewGrid(1, 1); // restore
+  polyscope::view::createViewportGrid(1, 1); // restore
 }
 
 TEST_F(PolyscopeTest, UIScale) {
@@ -442,10 +442,10 @@ TEST_F(PolyscopeTest, GroundPlaneTest) {
   polyscope::options::groundPlaneHeightMode = polyscope::GroundPlaneHeightMode::Automatic;
   polyscope::show(3);
 
-  // render with subviews
-  polyscope::view::createSubviewGrid(2, 1);
+  // render with viewports
+  polyscope::view::createViewportGrid(2, 1);
   polyscope::show(3);
-  polyscope::view::createSubviewGrid(1, 1);
+  polyscope::view::createViewportGrid(1, 1);
 
   polyscope::removeAllStructures();
 }
