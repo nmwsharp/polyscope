@@ -9,6 +9,7 @@ namespace detail {
 // storage for persistent value global caches
 // clang-format off
 PersistentCache<int32_t> persistentCache_int32_t;
+PersistentCache<uint64_t> persistentCache_uint64_t;
 PersistentCache<double> persistentCache_double;
 PersistentCache<float> persistentCache_float;
 PersistentCache<bool> persistentCache_bool;

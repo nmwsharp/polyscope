@@ -465,38 +465,31 @@ const ShaderReplacementRule CULL_POS_FROM_VIEW (
     /* textures */ {}
 );
 
-const ShaderReplacementRule BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE(
-    /* rule name */ "BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE",
+// A combined rule that uses a uniform u_isPerspective to select between perspective and orthographic ray building at
+// runtime.
+const ShaderReplacementRule BUILD_RAY_FOR_FRAGMENT_DYNAMIC(
+    /* rule name */ "BUILD_RAY_FOR_FRAGMENT_DYNAMIC",
     { /* replacement sources */
       {"FRAG_DECLARATIONS", R"(
+        uniform int u_isPerspective;
         void buildRayForFragmentPerspective(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord, out vec3 rayStart, out vec3 rayDir);
-      )"},
-      {"BUILD_RAY_FOR_FRAGMENT", R"(
-        buildRayForFragmentPerspective(u_viewport, vec2(gl_DepthRange.near, gl_DepthRange.far), u_projMatrix, u_invProjMatrix, gl_FragCoord, rayStart, rayDir);
-      )"},
-      {"GEOM_CONSTRUCT_VECTOR_TO_CAMERA_IN_VIEW_SPACE", R"(
-          vec3 dirToCam = normalize(-gl_in[0].gl_Position.xyz);
-      )"}
-    },
-    /* uniforms */ {},
-    /* attributes */ {},
-    /* textures */ {}
-);
-
-const ShaderReplacementRule BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC(
-    /* rule name */ "BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC",
-    { /* replacement sources */
-      {"FRAG_DECLARATIONS", R"(
         void buildRayForFragmentOrthographic(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord, out vec3 rayStart, out vec3 rayDir);
       )"},
       {"BUILD_RAY_FOR_FRAGMENT", R"(
-        buildRayForFragmentOrthographic(u_viewport, vec2(gl_DepthRange.near, gl_DepthRange.far), u_projMatrix, u_invProjMatrix, gl_FragCoord, rayStart, rayDir);
+        if (u_isPerspective != 0) {
+          buildRayForFragmentPerspective(u_viewport, vec2(gl_DepthRange.near, gl_DepthRange.far), u_projMatrix, u_invProjMatrix, gl_FragCoord, rayStart, rayDir);
+        } else {
+          buildRayForFragmentOrthographic(u_viewport, vec2(gl_DepthRange.near, gl_DepthRange.far), u_projMatrix, u_invProjMatrix, gl_FragCoord, rayStart, rayDir);
+        }
+      )"},
+      {"GEOM_DECLARATIONS", R"(
+        uniform int u_isPerspective;
       )"},
       {"GEOM_CONSTRUCT_VECTOR_TO_CAMERA_IN_VIEW_SPACE", R"(
-        vec3 dirToCam = vec3(0.0, 0.0, 1.0);
+          vec3 dirToCam = (u_isPerspective != 0) ? normalize(-gl_in[0].gl_Position.xyz) : vec3(0.0, 0.0, 1.0);
       )"}
     },
-    /* uniforms */ {},
+    /* uniforms */ {{"u_isPerspective", RenderDataType::Int}},
     /* attributes */ {},
     /* textures */ {}
 );

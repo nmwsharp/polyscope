@@ -14,6 +14,7 @@ namespace polyscope {
 
 Structure::Structure(std::string name_, std::string subtypeName_)
     : name(name_), subtypeName(subtypeName_), enabled(subtypeName + "#" + name + "#enabled", true),
+      viewportVisibilityMask(subtypeName + "#" + name + "#viewportVisibilityMask", ~uint64_t(0)),
       objectTransform(subtypeName + "#" + name + "#object_transform", glm::mat4(1.0)),
       transparency(subtypeName + "#" + name + "#transparency", 1.0),
       transformGizmo(subtypeName + "#" + name + "#transform_gizmo", &objectTransform.get(), &objectTransform),
@@ -25,7 +26,7 @@ Structure::Structure(std::string name_, std::string subtypeName_)
   validateName(name);
 }
 
-Structure::~Structure() {};
+Structure::~Structure(){};
 
 Structure* Structure::setEnabled(bool newEnabled) {
   if (newEnabled == isEnabled()) return this;
@@ -52,6 +53,42 @@ void Structure::setEnabledAllOfType(bool newEnabled) {
 void Structure::addToGroup(std::string groupName) { addToGroup(*getGroup(groupName)); }
 
 void Structure::addToGroup(Group& group) { group.addChildStructure(*this); }
+
+void Structure::setViewportVisibility(int32_t viewportInd, bool visible) {
+  if (viewportInd < 0 || viewportInd >= view::maxNumViewports) {
+    error("Invalid viewport index " + std::to_string(viewportInd));
+  }
+  uint64_t mask = viewportVisibilityMask.get();
+  if (visible) {
+    mask |= (uint64_t(1) << viewportInd);
+  } else {
+    mask &= ~(uint64_t(1) << viewportInd);
+  }
+  viewportVisibilityMask = mask;
+  requestRedraw();
+}
+
+void Structure::setViewportVisibilityAll(bool visible) {
+  viewportVisibilityMask = visible ? ~uint64_t(0) : uint64_t(0);
+  requestRedraw();
+}
+
+void Structure::setViewportVisibilityExclusive(int32_t viewportInd) {
+  if (viewportInd < 0 || viewportInd >= view::maxNumViewports) {
+    error("Invalid viewport index " + std::to_string(viewportInd));
+  }
+  viewportVisibilityMask = uint64_t(1) << viewportInd;
+  requestRedraw();
+}
+
+bool Structure::getViewportVisibility(int32_t viewportInd) {
+  if (viewportInd < 0) viewportInd = view::getActiveViewportIndex();
+  if (viewportInd < 0 || viewportInd >= view::maxNumViewports) {
+    error("Invalid viewport index " + std::to_string(viewportInd));
+  }
+  return (viewportVisibilityMask.get() >> viewportInd) & uint64_t(1);
+}
+
 
 void Structure::buildUI() {
   ImGui::PushID(name.c_str()); // ensure there are no conflicts with
@@ -128,6 +165,19 @@ void Structure::buildUI() {
         if (ImGui::MenuItem("Enable all of type")) setEnabledAllOfType(true);
         if (ImGui::MenuItem("Disable all of type")) setEnabledAllOfType(false);
         if (ImGui::MenuItem("Isolate")) enableIsolate();
+        ImGui::EndMenu();
+      }
+
+      // Viewport visibility (only shown when multiple viewports exist)
+      int nViewports = view::getNumViewports();
+      if (nViewports > 1 && ImGui::BeginMenu("Viewport Visibility")) {
+        if (ImGui::MenuItem("Show in all")) setViewportVisibilityAll(true);
+        if (ImGui::MenuItem("Hide in all")) setViewportVisibilityAll(false);
+        ImGui::Separator();
+        for (int i = 0; i < nViewports; i++) {
+          bool vis = getViewportVisibility(i);
+          if (ImGui::MenuItem(("Viewport " + std::to_string(i)).c_str(), NULL, vis)) setViewportVisibility(i, !vis);
+        }
         ImGui::EndMenu();
       }
 
@@ -275,6 +325,11 @@ void Structure::setStructureUniforms(render::ShaderProgram& p) {
     p.setUniform("u_projMatrix", glm::value_ptr(projMat));
   }
 
+  if (p.hasUniform("u_isPerspective")) {
+    int isPerspective = (view::projectionMode == ProjectionMode::Perspective) ? 1 : 0;
+    p.setUniform("u_isPerspective", isPerspective);
+  }
+
   if (render::engine->transparencyEnabled()) {
     if (p.hasUniform("u_transparency")) {
       p.setUniform("u_transparency", transparency.get());
@@ -286,10 +341,8 @@ void Structure::setStructureUniforms(render::ShaderProgram& p) {
       p.setUniform("u_viewportDim", viewportDim);
     }
 
-    // Attach the min depth texture, if needed
-    // (note that this design is somewhat lazy wrt to the name of the function: it sets a texture, not a uniform, and
-    // only actually does anything once on initialization)
-    if (render::engine->transparencyEnabled() && p.hasTexture("t_minDepth") && !p.textureIsSet("t_minDepth")) {
+    // Attach the min depth texture, if needed (rebind each draw since sceneDepthMin changes per-viewport)
+    if (render::engine->transparencyEnabled() && p.hasTexture("t_minDepth")) {
       p.setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
     }
   }

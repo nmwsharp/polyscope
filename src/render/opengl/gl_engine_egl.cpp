@@ -254,8 +254,7 @@ void GLEngineEGL::initialize() {
 
   {
     std::stringstream ss;
-    ss << "Backend: openGL3_egl -- "
-       << "Loaded openGL version: " << glGetString(GL_VERSION) << " -- "
+    ss << "Backend: openGL3_egl -- " << "Loaded openGL version: " << glGetString(GL_VERSION) << " -- "
        << "EGL version: " << majorVer << "." << minorVer;
     info(0, ss.str());
   }
@@ -588,9 +587,7 @@ void GLEngineEGL::updateWindowSize(bool force) {
 void GLEngineEGL::applyWindowSize() {
   view::bufferWidth = view::windowWidth;
   view::bufferHeight = view::windowHeight;
-
-  render::engine->resizeScreenBuffers();
-  render::engine->setScreenBufferViewports();
+  render::engine->resizeScreenBuffersAndSetViewports();
 }
 
 

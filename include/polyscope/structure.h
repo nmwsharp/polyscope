@@ -133,6 +133,14 @@ public:
   void addToGroup(std::string groupName);
   void addToGroup(Group& group);
 
+  // Viewport visibility
+  // If true, the structure (and any of its quantities) are visible on the i'th viewport
+  void setViewportVisibility(int32_t viewportInd, bool assigned);
+  void setViewportVisibilityAll(bool assigned);             // set visibility true/false for all viewports
+  void setViewportVisibilityExclusive(int32_t viewportInd); // only visible in the i'th viewport
+  bool getViewportVisibility(int32_t viewportInd = -1);     // test visibility for the i'th viewport,
+                                                            // -1 means currently active viewport
+
   // ====================================================================
   // ==== Options =======================================================
   // ====================================================================
@@ -264,7 +272,12 @@ public:
 
 protected:
   // = State
+
   PersistentValue<bool> enabled;
+
+  // Used to implement viewport visibility
+  PersistentValue<uint64_t> viewportVisibilityMask;
+
   PersistentValue<glm::mat4> objectTransform; // rigid transform
 
   // 0 for transparent, 1 for opaque, only has effect if engine transparency is set

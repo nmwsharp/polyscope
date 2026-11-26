@@ -134,7 +134,7 @@ int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataTyp
   if (r1 == RenderDataType::Vector2Float && r2 == RenderDataType::Float) return 2;
   if (r1 == RenderDataType::Vector3Float && r2 == RenderDataType::Float) return 3;
   if (r1 == RenderDataType::Vector4Float && r2 == RenderDataType::Float) return 4;
-  
+
   if (r1 == RenderDataType::Vector2Int && r2 == RenderDataType::Int) return 2;
   if (r1 == RenderDataType::Vector3Int && r2 == RenderDataType::Int) return 3;
   if (r1 == RenderDataType::Vector4Int && r2 == RenderDataType::Int) return 4;
@@ -489,32 +489,83 @@ void Engine::clearDisplay() {
 
 void Engine::clearSceneBuffer() { sceneBuffer->clear(); }
 
-void Engine::resizeScreenBuffers() {
+void Engine::resizeScreenBuffersAndSetViewports() {
+  view::updateViewportDimensions();
   unsigned int width = view::bufferWidth;
   unsigned int height = view::bufferHeight;
   displayBuffer->resize(width, height);
   displayBufferAlt->resize(width, height);
-  sceneBuffer->resize(ssaaFactor * width, ssaaFactor * height);
   sceneBufferFinal->resize(ssaaFactor * width, ssaaFactor * height);
-  sceneDepthMinFrame->resize(ssaaFactor * width, ssaaFactor * height);
-}
 
-void Engine::setScreenBufferViewports() {
-  unsigned int xStart = 0;
-  unsigned int yStart = 0;
-  unsigned int sizeX = view::bufferWidth;
-  unsigned int sizeY = view::bufferHeight;
+  displayBuffer->setViewport(0, 0, width, height);
+  displayBufferAlt->setViewport(0, 0, width, height);
+  sceneBufferFinal->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
 
-  displayBuffer->setViewport(xStart, yStart, sizeX, sizeY);
-  displayBufferAlt->setViewport(xStart, yStart, sizeX, sizeY);
-  sceneBuffer->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
-  sceneBufferFinal->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
-  sceneDepthMinFrame->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
+  for (size_t i = 0; i < sceneBufferTargets.size(); i++) {
+    view::ViewParameters vp = view::getViewportParameters(i);
+
+    sceneBufferTargets[i]->resize(ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
+    sceneDepthMinFrameTargets[i]->resize(ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
+
+    sceneBufferTargets[i]->setViewport(0, 0, ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
+    sceneDepthMinFrameTargets[i]->setViewport(0, 0, ssaaFactor * vp.viewportBufferWidth,
+                                              ssaaFactor * vp.viewportBufferHeight);
+  }
 }
 
 bool Engine::bindSceneBuffer() {
   setCurrentPixelScaling(ssaaFactor * options::uiScale);
   return sceneBuffer->bindForRendering();
+}
+
+void Engine::setActiveSceneTarget(int i) {
+  if (i >= (int)sceneBufferTargets.size()) exception("invalid scene target index");
+  sceneBuffer = sceneBufferTargets[i];
+  sceneColor = sceneColorTargets[i];
+  sceneDepth = sceneDepthTargets[i];
+  sceneDepthMin = sceneDepthMinTargets[i];
+  sceneDepthMinFrame = sceneDepthMinFrameTargets[i];
+}
+
+void Engine::ensureSceneTargetsAllocated(int count) {
+  int currentCount = (int)sceneColorTargets.size();
+  if (currentCount == count) return;
+
+  sceneColorTargets.resize(count);
+  sceneDepthTargets.resize(count);
+  sceneBufferTargets.resize(count);
+  sceneDepthMinTargets.resize(count);
+  sceneDepthMinFrameTargets.resize(count);
+
+  // initialize any new targets/buffers
+  for (int i = currentCount; i < count; i++) {
+
+    // we always initialize at the arbitray size of 128x128, then resize below to avoid duplicating logic
+    unsigned int w = 128;
+    unsigned int h = 128;
+
+    std::shared_ptr<TextureBuffer> color = generateTextureBuffer(TextureFormat::RGBA16F, w, h);
+    std::shared_ptr<TextureBuffer> depth = generateTextureBuffer(TextureFormat::DEPTH24, w, h);
+    std::shared_ptr<FrameBuffer> fb = generateFrameBuffer(w, h);
+    fb->addColorBuffer(color);
+    fb->addDepthBuffer(depth);
+    fb->setDrawBuffers();
+    fb->clearColor = glm::vec3{1., 1., 1.};
+    fb->clearAlpha = 0.0;
+
+    std::shared_ptr<TextureBuffer> depthMin = generateTextureBuffer(TextureFormat::DEPTH24, w, h);
+    std::shared_ptr<FrameBuffer> depthMinFrame = generateFrameBuffer(w, h);
+    depthMinFrame->addDepthBuffer(depthMin);
+    depthMinFrame->clearDepth = 0.0;
+
+    sceneColorTargets[i] = color;
+    sceneDepthTargets[i] = depth;
+    sceneBufferTargets[i] = fb;
+    sceneDepthMinTargets[i] = depthMin;
+    sceneDepthMinFrameTargets[i] = depthMinFrame;
+  }
+
+  resizeScreenBuffersAndSetViewports();
 }
 
 void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
@@ -690,30 +741,6 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
   // Note: The display frame buffer should be manually wrapped by child classes
 
-  { // Scene buffer
-
-    // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there
-    sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
-    // sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
-    sceneDepth = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
-
-    sceneBuffer = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
-    sceneBuffer->addColorBuffer(sceneColor);
-    sceneBuffer->addDepthBuffer(sceneDepth);
-    sceneBuffer->setDrawBuffers();
-
-    sceneBuffer->clearColor = glm::vec3{1., 1., 1.};
-    sceneBuffer->clearAlpha = 0.0;
-  }
-
-  { // Alternate depth texture used for some effects
-    sceneDepthMin = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
-
-    sceneDepthMinFrame = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
-    sceneDepthMinFrame->addDepthBuffer(sceneDepthMin);
-    sceneDepthMinFrame->clearDepth = 0.0;
-  }
-
   { // "Final" scene buffer (after resolving)
     sceneColorFinal = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
 
@@ -773,12 +800,10 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     compositePeel = render::engine->requestShader("COMPOSITE_PEEL", {}, render::ShaderReplacementDefaults::Process);
     compositePeel->setAttribute("a_position", screenTrianglesCoords());
     compositePeel->setDrawCount(screenTrianglesCoords().size());
-    compositePeel->setTextureFromBuffer("t_image", sceneColor.get());
 
     copyDepth = render::engine->requestShader("DEPTH_COPY", {}, render::ShaderReplacementDefaults::Process);
     copyDepth->setAttribute("a_position", screenTrianglesCoords());
     copyDepth->setDrawCount(screenTrianglesCoords().size());
-    copyDepth->setTextureFromBuffer("t_depth", sceneDepth.get());
     // clang-format on
   }
 
@@ -909,8 +934,9 @@ std::vector<glm::vec4> Engine::distantCubeCoords() {
 }
 
 void Engine::updateMinDepthTexture() {
+  sceneDepthMinFrame->bindForRendering();
   setDepthMode(DepthMode::Greater);
-  sceneDepthMinFrame->bind();
+  copyDepth->setTextureFromBuffer("t_depth", sceneDepth.get());
   copyDepth->draw();
 }
 
@@ -919,13 +945,18 @@ void Engine::freeAllOwnedResources() {
   displayBuffer.reset();
   displayBufferAlt.reset();
   sceneBuffer.reset();
+  sceneBufferTargets.clear();
   sceneBufferFinal.reset();
   pickFramebuffer.reset();
   sceneDepthMinFrame.reset();
+  sceneDepthMinFrameTargets.clear();
   sceneColor.reset();
   sceneColorFinal.reset();
   sceneDepth.reset();
   sceneDepthMin.reset();
+  sceneColorTargets.clear();
+  sceneDepthTargets.clear();
+  sceneDepthMinTargets.clear();
   pickColorBuffer.reset();
   pickDepthBuffer.reset();
   renderTexturePlain.reset();

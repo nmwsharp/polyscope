@@ -132,6 +132,7 @@ protected:
 namespace detail {
 
 extern PersistentCache<int32_t> persistentCache_int32_t;
+extern PersistentCache<uint64_t> persistentCache_uint64_t;
 extern PersistentCache<double> persistentCache_double;
 extern PersistentCache<float> persistentCache_float;
 extern PersistentCache<bool> persistentCache_bool;
@@ -151,6 +152,7 @@ extern PersistentCache<MeshSelectionMode>   persistentCache_MeshSelectionMode;
 extern PersistentCache<SparseVolumeGridRenderMode> persistentCache_SparseVolumeGridRenderMode;
 
 template<> inline PersistentCache<int32_t>&                  getPersistentCacheRef<int32_t>()                  { return persistentCache_int32_t; }
+template<> inline PersistentCache<uint64_t>&                 getPersistentCacheRef<uint64_t>()                 { return persistentCache_uint64_t; }
 template<> inline PersistentCache<double>&                   getPersistentCacheRef<double>()                   { return persistentCache_double; }
 template<> inline PersistentCache<float>&                    getPersistentCacheRef<float>()                    { return persistentCache_float; }
 template<> inline PersistentCache<bool>&                     getPersistentCacheRef<bool>()                     { return persistentCache_bool; }

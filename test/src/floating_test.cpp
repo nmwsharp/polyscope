@@ -252,6 +252,16 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
   polyscope::removeFloatingQuantity("render im depth", true);
   polyscope::show(3);
 
+  // render and pick with viewports
+  polyscope::view::createViewportGrid(2, 1);
+  polyscope::show(3);
+  polyscope::pickViewportAtScreenCoords(glm::vec2(0.3, 0.8), 0);
+  polyscope::pickViewportAtScreenCoords(glm::vec2(0.3, 0.8), 1);
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::show(3);
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+  polyscope::view::createViewportGrid(1, 1);
+
   polyscope::removeAllStructures();
 }
 

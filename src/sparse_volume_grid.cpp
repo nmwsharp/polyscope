@@ -440,9 +440,9 @@ void SparseVolumeGrid::ensureWireframeProgramsPrepared() {
   {
     // clang-format off
     wireframeNodeProgram = render::engine->requestShader("RAYCAST_SPHERE",
-        render::engine->addMaterialRules(material.get(), 
+        render::engine->addMaterialRules(material.get(),
           addStructureRules(
-            { view::getCurrentProjectionModeRaycastRule(),
+            { "BUILD_RAY_FOR_FRAGMENT_DYNAMIC",
               wantsCullPosition() ? "SPHERE_CULLPOS_FROM_CENTER" : "",
               "SHADE_BASECOLOR"
             }
@@ -459,9 +459,9 @@ void SparseVolumeGrid::ensureWireframeProgramsPrepared() {
   {
     // clang-format off
     wireframeEdgeProgram = render::engine->requestShader("RAYCAST_CYLINDER",
-        render::engine->addMaterialRules(material.get(), 
+        render::engine->addMaterialRules(material.get(),
           addStructureRules(
-            { view::getCurrentProjectionModeRaycastRule(),
+            { "BUILD_RAY_FOR_FRAGMENT_DYNAMIC",
               wantsCullPosition() ? "CYLINDER_CULLPOS_FROM_MID" : "",
               "SHADE_BASECOLOR"
             }

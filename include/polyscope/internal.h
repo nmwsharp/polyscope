@@ -49,7 +49,6 @@ extern float rightWindowsWidth;
 // Cached versions of lazy properties used for updates
 namespace lazy {
 extern TransparencyMode transparencyMode;
-extern ProjectionMode projectionMode;
 extern int transparencyRenderPasses;
 extern int ssaaFactor;
 extern float uiScale;

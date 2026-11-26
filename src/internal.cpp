@@ -29,7 +29,6 @@ float rightWindowsWidth = -1.;
 namespace lazy {
 
 TransparencyMode transparencyMode = TransparencyMode::None;
-ProjectionMode projectionMode = ProjectionMode::Perspective;
 int transparencyRenderPasses = 8;
 int ssaaFactor = 1;
 float uiScale = -1.;

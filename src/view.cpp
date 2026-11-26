@@ -43,6 +43,7 @@ glm::vec3& flightTargetViewT = state::globalContext.flightTargetViewT;
 glm::vec3& flightInitialViewT = state::globalContext.flightInitialViewT;
 float& flightTargetFov = state::globalContext.flightTargetFov;
 float& flightInitialFov = state::globalContext.flightInitialFov;
+int& activeViewportIndex = state::globalContext.activeViewportIndex;
 
 
 // Default values
@@ -63,6 +64,7 @@ float overrideFarClipRelative = defaultFarClipRatio;
 // Small helpers
 
 namespace { // anonymous helpers
+
 
 // A default pairing of <up,front> directions to fall back on when something goes wrong.
 const std::vector<std::pair<UpDir, FrontDir>> defaultUpFrontPairs{
@@ -113,19 +115,93 @@ glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds) {
   return bufferIndsToScreenCoords(bufferInds.x, bufferInds.y);
 }
 
-std::string getCurrentProjectionModeRaycastRule() {
-  // This is related to the render engine, it returns the name of the
-  // shader rule which constructs rays for raycasting-based rendering.
-  // See rules.h
+// NOTE: All of the helpers here follow the conventions in the big note in view.h: screen coords and buffer inds both
+// have y=0 at the TOP, and differ only by the DPI scale factor. "Global" coordinates have their origin at the top-left
+// of the whole window, "local" (viewport) coordinates have their origin at the top-left of a particular viewport.
 
-  switch (view::projectionMode) {
-  case ProjectionMode::Perspective:
-    return "BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE";
-  case ProjectionMode::Orthographic:
-    return "BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC";
-  }
-  return "";
+namespace {
+// The top-left corner of a viewport, in global buffer inds (y-from-top)
+glm::ivec2 viewportOriginBufferInds(const ViewParameters& vp) { return glm::ivec2(vp.viewportPosX, vp.viewportPosY); }
+}; // namespace
+
+// local screen coords --> local buffer inds
+std::tuple<int, int> screenCoordsToBufferIndsViewport(glm::vec2 screenCoords, int32_t viewportInd) {
+  if (viewportInd < 0) viewportInd = getActiveViewportIndex();
+  const ViewParameters& vp = getViewportParameters(viewportInd);
+
+  int xPos = (screenCoords.x * view::bufferWidth) / view::windowWidth;
+  int yPos = (screenCoords.y * view::bufferHeight) / view::windowHeight;
+
+  // clamp to lie in the viewport
+  xPos = std::max(std::min(xPos, vp.viewportBufferWidth - 1), 0);
+  yPos = std::max(std::min(yPos, vp.viewportBufferHeight - 1), 0);
+
+  return std::tuple<int, int>(xPos, yPos);
 }
+
+glm::ivec2 screenCoordsToBufferIndsVecViewport(glm::vec2 screenCoords, int32_t viewportInd) {
+  glm::ivec2 out;
+  std::tie(out.x, out.y) = screenCoordsToBufferIndsViewport(screenCoords, viewportInd);
+  return out;
+}
+
+// local buffer inds --> local screen coords
+glm::vec2 bufferIndsToScreenCoordsViewport(int xPos, int yPos, int32_t viewportInd) {
+  // (only a change of scale, so the viewport is not actually needed here, but we keep the argument to mirror the
+  // function above)
+  return bufferIndsToScreenCoords(xPos, yPos);
+}
+
+glm::vec2 bufferIndsToScreenCoordsViewport(glm::ivec2 bufferInds, int32_t viewportInd) {
+  return bufferIndsToScreenCoordsViewport(bufferInds.x, bufferInds.y, viewportInd);
+}
+
+std::tuple<glm::vec2, int32_t> screenCoordsGlobalToViewport(glm::vec2 screenCoords) {
+  int32_t viewportInd = screenCoordsToViewportInd(screenCoords);
+  glm::vec4 rect = getViewportImGuiRect(viewportInd); // {x, y, width, height} in global screen coords
+  glm::vec2 localCoords{std::max(std::min(screenCoords.x - rect.x, rect.z), 0.f),
+                        std::max(std::min(screenCoords.y - rect.y, rect.w), 0.f)};
+  return {localCoords, viewportInd};
+}
+
+std::tuple<glm::ivec2, int32_t> bufferIndsGlobalToViewport(glm::ivec2 bufferInds) {
+  int32_t viewportInd = bufferIndsToViewportInd(bufferInds);
+  const ViewParameters& vp = getViewportParameters(viewportInd);
+  glm::ivec2 localInds = bufferInds - viewportOriginBufferInds(vp);
+  localInds.x = std::max(std::min(localInds.x, vp.viewportBufferWidth - 1), 0);
+  localInds.y = std::max(std::min(localInds.y, vp.viewportBufferHeight - 1), 0);
+  return {localInds, viewportInd};
+}
+
+glm::vec2 screenCoordsViewportToGlobal(glm::vec2 screenCoords, int32_t viewportInd) {
+  glm::vec4 rect = getViewportImGuiRect(viewportInd); // {x, y, width, height} in global screen coords
+  return glm::vec2{rect.x + screenCoords.x, rect.y + screenCoords.y};
+}
+
+glm::ivec2 bufferIndsViewportToGlobal(glm::ivec2 bufferInds, int32_t viewportInd) {
+  if (viewportInd < 0) viewportInd = getActiveViewportIndex();
+  const ViewParameters& vp = getViewportParameters(viewportInd);
+  return viewportOriginBufferInds(vp) + bufferInds;
+}
+
+int32_t bufferIndsToViewportInd(glm::ivec2 bufferInds) {
+  for (int32_t i = getNumViewports() - 1; i >= 0; i--) {
+    // go back-to-front, so we report the topmost matching viewport
+    const ViewParameters& vp = getViewportParameters(i);
+    glm::ivec2 origin = viewportOriginBufferInds(vp); // (y-from-top, like the input)
+    if (bufferInds.x >= origin.x && bufferInds.x < origin.x + vp.viewportBufferWidth && bufferInds.y >= origin.y &&
+        bufferInds.y < origin.y + vp.viewportBufferHeight) {
+      return i;
+    }
+  }
+
+  return 0; // returning 0 is the least evil option if we miss somehow due to cracks or invalid input
+}
+
+int32_t screenCoordsToViewportInd(glm::vec2 screenCoords) {
+  return bufferIndsToViewportInd(screenCoordsToBufferIndsVec(screenCoords));
+}
+
 
 void processRotate(glm::vec2 startP, glm::vec2 endP) {
 
@@ -256,8 +332,9 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
   }
   }
 
-  requestRedraw();
   immediatelyEndFlight();
+  propagateViewUpdatesToViewports();
+  requestRedraw();
 }
 
 void processTranslate(glm::vec2 delta) {
@@ -285,14 +362,16 @@ void processTranslate(glm::vec2 delta) {
 
   projectCenterToBeValidForView();
 
-  requestRedraw();
   immediatelyEndFlight();
+  propagateViewUpdatesToViewports();
+  requestRedraw();
 }
 
 void processClipPlaneShift(float amount) {
   if (amount == 0.0) return;
   // Adjust the near clipping plane
   nearClip += .03 * amount * nearClip;
+  propagateViewUpdatesToViewports();
   requestRedraw();
 }
 
@@ -332,6 +411,7 @@ void processZoom(float amount) {
 
 
   immediatelyEndFlight();
+  propagateViewUpdatesToViewports();
   requestRedraw();
 }
 
@@ -381,6 +461,7 @@ void processKeyboardNavigation(ImGuiIO& io) {
 
   if (hasMovement) {
     immediatelyEndFlight();
+    propagateViewUpdatesToViewports();
     requestRedraw();
   }
 }
@@ -536,6 +617,8 @@ void updateViewAndChangeNavigationStyle(NavigateStyle newStyle, bool flyTo) {
 
     requestRedraw();
   }
+
+  propagateViewUpdatesToViewports();
 }
 
 void updateViewAndChangeUpDir(UpDir newUpDir, bool flyTo) {
@@ -571,6 +654,8 @@ void updateViewAndChangeUpDir(UpDir newUpDir, bool flyTo) {
 
     requestRedraw();
   }
+
+  propagateViewUpdatesToViewports();
 }
 
 void updateViewAndChangeFrontDir(FrontDir newFrontDir, bool flyTo) {
@@ -595,6 +680,8 @@ void updateViewAndChangeFrontDir(FrontDir newFrontDir, bool flyTo) {
 
     requestRedraw();
   }
+
+  propagateViewUpdatesToViewports();
 }
 
 void setViewCenterAndLookAt(glm::vec3 newCenter, bool flyTo) {
@@ -631,6 +718,8 @@ void setViewCenterAndLookAt(glm::vec3 newCenter, bool flyTo) {
 
     requestRedraw();
   }
+
+  propagateViewUpdatesToViewports();
 }
 
 void setViewCenterAndProject(glm::vec3 newCenter) {
@@ -667,10 +756,12 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
 
 
   if (flyTo) {
+    propagateViewUpdatesToViewports();
     startFlightTo(targetView, fov);
   } else {
     viewMat = targetView;
     projectCenterToBeValidForView();
+    propagateViewUpdatesToViewports();
     requestRedraw();
   }
 }
@@ -693,12 +784,14 @@ void setViewToCamera(const CameraParameters& p) {
   // aspectRatio = p.focalLengths.x / p.focalLengths.y; // TODO should be
   // flipped?
   projectCenterToBeValidForView();
+  propagateViewUpdatesToViewports();
+  requestRedraw();
 }
 
 CameraParameters getCameraParametersForCurrentView() {
   ensureViewValid();
 
-  float aspectRatio = (float)bufferWidth / bufferHeight;
+  float aspectRatio = getAspectRatioWidthOverHeight();
   return CameraParameters(CameraIntrinsics::fromFoVDegVerticalAndAspect(fov, aspectRatio),
                           CameraExtrinsics::fromMatrix(viewMat));
 }
@@ -706,6 +799,7 @@ CameraParameters getCameraParametersForCurrentView() {
 void setCameraViewMatrix(glm::mat4 mat) {
   viewMat = mat;
   projectCenterToBeValidForView();
+  propagateViewUpdatesToViewports();
   requestRedraw();
 }
 
@@ -713,6 +807,7 @@ glm::mat4 getCameraViewMatrix() { return viewMat; }
 
 void setVerticalFieldOfViewDegrees(float newVal) {
   view::fov = newVal;
+  propagateViewUpdatesToViewports();
   requestRedraw();
 }
 
@@ -720,8 +815,7 @@ ProjectionMode getProjectionMode() { return projectionMode; }
 
 void setProjectionMode(ProjectionMode newMode) {
   projectionMode = newMode;
-  internal::lazy::projectionMode = newMode; // update the lazy property right now, so we don't pay for a refresh twice
-  refresh();
+  propagateViewUpdatesToViewports();
   requestRedraw();
 }
 
@@ -729,18 +823,23 @@ void setProjectionMode(ProjectionMode newMode) {
 ViewRelativeMode getViewRelativeMode() { return viewRelativeMode; }
 void setViewRelativeMode(ViewRelativeMode newMode) {
   viewRelativeMode = newMode;
+  propagateViewUpdatesToViewports();
   requestRedraw();
 }
 void setClipPlanes(float newNearClip, float newFarClip) {
   nearClip = newNearClip;
   farClip = newFarClip;
+  propagateViewUpdatesToViewports();
   requestRedraw();
 }
 std::tuple<float, float> getClipPlanes() { return std::tuple<float, float>(nearClip, farClip); }
 
 float getVerticalFieldOfViewDegrees() { return view::fov; }
 
-float getAspectRatioWidthOverHeight() { return (float)bufferWidth / bufferHeight; }
+float getAspectRatioWidthOverHeight() {
+  int h = getActiveViewportBufferHeight();
+  return (h > 0) ? (float)getActiveViewportBufferWidth() / h : 1.0f;
+}
 
 glm::mat4 getCameraPerspectiveMatrix() {
 
@@ -754,7 +853,7 @@ glm::mat4 getCameraPerspectiveMatrix() {
   }
 
   float fovRad = glm::radians(fov);
-  float aspectRatio = (float)bufferWidth / bufferHeight;
+  float aspectRatio = getAspectRatioWidthOverHeight();
   switch (projectionMode) {
   case ProjectionMode::Perspective: {
     return glm::perspective(fovRad, aspectRatio, absNearClip, absFarClip);
@@ -769,7 +868,6 @@ glm::mat4 getCameraPerspectiveMatrix() {
   }
   return glm::mat4(1.0f); // unreachable
 }
-
 
 glm::vec3 getCameraWorldPosition() {
   // This will work no matter how the view matrix is constructed...
@@ -803,32 +901,85 @@ glm::vec3 getLookVec() {
   return Rt * glm::vec3(0.0, 0.0, -1.0);
 }
 
-glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords) {
+// NOTE: There are two flavors of the ray/position helpers below, see the note in view.h:
+//  - the plain versions (like screenCoordsToWorldRay()) take GLOBAL coordinates on the whole window, find the viewport
+//    that contains them, and call the viewport version.
+//  - the viewport versions (like viewportScreenCoordsToWorldRay()) take coordinates LOCAL to a viewport, and use the
+//    camera of that viewport, which might not be the active one.
 
+namespace {
+// Find the viewport that contains some global screen coords, and the coords in that viewport's local frame.
+// Unlike screenCoordsGlobalToViewport(), the local coords are NOT clamped to the viewport. The plain ray functions
+// don't clamp, so points outside the window still give a ray, like they always did when using a single viewport.
+std::tuple<glm::vec2, int32_t> globalScreenCoordsToLocalUnclamped(glm::vec2 screenCoords) {
+  int32_t viewportInd = screenCoordsToViewportInd(screenCoords);
+  glm::vec4 rect = getViewportImGuiRect(viewportInd); // {x, y, width, height} in global screen coords
+  return std::tuple<glm::vec2, int32_t>(glm::vec2(screenCoords.x - rect.x, screenCoords.y - rect.y), viewportInd);
+}
+
+// Same, for buffer coords
+std::tuple<glm::vec2, int32_t> globalBufferCoordsToLocalUnclamped(glm::vec2 bufferCoords) {
+  int32_t viewportInd = bufferIndsToViewportInd(glm::ivec2(bufferCoords));
+  glm::ivec2 origin = viewportOriginBufferInds(getViewportParameters(viewportInd));
+  return std::tuple<glm::vec2, int32_t>(bufferCoords - glm::vec2(origin), viewportInd);
+}
+
+// The workhorse for rays from buffer coords
+glm::vec3 localBufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t viewportInd) {
+  int32_t prevViewport = getActiveViewportIndex();
+  bool switched = (viewportInd >= 0 && viewportInd != prevViewport);
+  if (switched) activateViewport(viewportInd);
+
+  const ViewParameters& vp = getViewportParameters();
   glm::mat4 view = getCameraViewMatrix();
   glm::mat4 proj = getCameraPerspectiveMatrix();
-  glm::vec4 viewport = {0., 0., view::windowWidth, view::windowHeight};
+  glm::vec4 viewport = {0., 0., vp.viewportBufferWidth, vp.viewportBufferHeight};
 
-  glm::vec3 screenPos3{screenCoords.x, view::windowHeight - screenCoords.y, 0.};
+  glm::vec3 screenPos3{bufferCoords.x, vp.viewportBufferHeight - bufferCoords.y, 0.};
   glm::vec3 worldPos = glm::unProject(screenPos3, view, proj, viewport);
-  glm::vec3 worldRayDir = glm::normalize(glm::vec3(worldPos) - getCameraWorldPosition());
+  glm::vec3 worldRayDir = glm::normalize(worldPos - getCameraWorldPosition());
 
+  if (switched) activateViewport(prevViewport);
+  return worldRayDir;
+}
+}; // namespace
+
+glm::vec3 viewportScreenCoordsToWorldRay(glm::vec2 screenCoords, int32_t viewportInd) {
+  int32_t prevViewport = getActiveViewportIndex();
+  bool switched = (viewportInd >= 0 && viewportInd != prevViewport);
+  if (switched) activateViewport(viewportInd);
+
+  const ViewParameters& vp = getViewportParameters();
+  glm::mat4 view = getCameraViewMatrix();
+  glm::mat4 proj = getCameraPerspectiveMatrix();
+  glm::vec4 viewport = {0., 0., vp.viewportWindowWidth, vp.viewportWindowHeight};
+
+  glm::vec3 screenPos3{screenCoords.x, vp.viewportWindowHeight - screenCoords.y, 0.};
+  glm::vec3 worldPos = glm::unProject(screenPos3, view, proj, viewport);
+  glm::vec3 worldRayDir = glm::normalize(worldPos - getCameraWorldPosition());
+
+  if (switched) activateViewport(prevViewport);
   return worldRayDir;
 }
 
-glm::vec3 bufferIndsToWorldRay(glm::vec2 bufferInds) { return bufferCoordsToWorldRay(bufferInds); }
+glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords) {
+  glm::vec2 localScreenCoords;
+  int32_t viewportInd;
+  std::tie(localScreenCoords, viewportInd) = globalScreenCoordsToLocalUnclamped(screenCoords);
+  return viewportScreenCoordsToWorldRay(localScreenCoords, viewportInd);
+}
+
+glm::vec3 viewportBufferIndsToWorldRay(glm::ivec2 bufferInds, int32_t viewportInd) {
+  return localBufferCoordsToWorldRay(glm::vec2(bufferInds), viewportInd);
+}
+
+glm::vec3 bufferIndsToWorldRay(glm::ivec2 bufferInds) { return bufferCoordsToWorldRay(glm::vec2(bufferInds)); }
 
 glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords) {
-
-  glm::mat4 view = getCameraViewMatrix();
-  glm::mat4 proj = getCameraPerspectiveMatrix();
-  glm::vec4 viewport = {0., 0., view::bufferWidth, view::bufferHeight};
-
-  glm::vec3 screenPos3{bufferCoords.x, view::bufferHeight - bufferCoords.y, 0.};
-  glm::vec3 worldPos = glm::unProject(screenPos3, view, proj, viewport);
-  glm::vec3 worldRayDir = glm::normalize(glm::vec3(worldPos) - getCameraWorldPosition());
-
-  return worldRayDir;
+  glm::vec2 localBufferCoords;
+  int32_t viewportInd;
+  std::tie(localBufferCoords, viewportInd) = globalBufferCoordsToLocalUnclamped(bufferCoords);
+  return localBufferCoordsToWorldRay(localBufferCoords, viewportInd);
 }
 
 std::tuple<float, float> computeClipPlanes() {
@@ -846,6 +997,13 @@ std::tuple<float, float> computeClipPlanes() {
 }
 
 glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth) {
+  glm::vec2 localScreenCoords;
+  int32_t viewportInd;
+  std::tie(localScreenCoords, viewportInd) = globalScreenCoordsToLocalUnclamped(screenCoords);
+  return viewportScreenCoordsAndDepthToWorldPosition(localScreenCoords, clipDepth, viewportInd);
+}
+
+glm::vec3 viewportScreenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth, int32_t viewportInd) {
 
   if (clipDepth == 1.) {
     // if we didn't hit anything in the depth buffer, just return infinity
@@ -853,16 +1011,18 @@ glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clip
     return glm::vec3{inf, inf, inf};
   }
 
+  int32_t prevViewport = getActiveViewportIndex();
+  bool switched = (viewportInd >= 0 && viewportInd != prevViewport);
+  if (switched) activateViewport(viewportInd);
 
-  glm::mat4 view = getCameraViewMatrix();
-  glm::mat4 viewInv = glm::inverse(view);
+  const ViewParameters& vp = getViewportParameters();
+  glm::mat4 viewInv = glm::inverse(getCameraViewMatrix());
   glm::mat4 proj = getCameraPerspectiveMatrix();
   glm::mat4 projInv = glm::inverse(proj);
   // glm::vec2 depthRange = {0., 1.}; // no support for nonstandard depth range, currently
 
-  // convert depth to world units
-  glm::vec2 screenPos{screenCoords.x / static_cast<float>(view::windowWidth),
-                      1.f - screenCoords.y / static_cast<float>(view::windowHeight)};
+  // Normalize the local screen coords (y-from-top) to [0,1], with y flipped to be y-from-bottom as in clip space
+  glm::vec2 screenPos{screenCoords.x / vp.viewportWindowWidth, 1.f - screenCoords.y / vp.viewportWindowHeight};
   float z = clipDepth * 2.0f - 1.0f;
   glm::vec4 clipPos = glm::vec4(screenPos * 2.0f - 1.0f, z, 1.0f);
   glm::vec4 viewPos = projInv * clipPos;
@@ -871,6 +1031,7 @@ glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clip
   glm::vec4 worldPos = viewInv * viewPos;
   worldPos /= worldPos.w;
 
+  if (switched) activateViewport(prevViewport);
   return glm::vec3(worldPos);
 }
 
@@ -904,9 +1065,16 @@ void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeco
   flightTargetFov = targetFov;
 
   midflight = true;
+
+  propagateViewUpdatesToViewports();
+  requestRedraw();
 }
 
-void immediatelyEndFlight() { midflight = false; }
+void immediatelyEndFlight() {
+  midflight = false;
+  propagateViewUpdatesToViewports();
+  requestRedraw();
+}
 
 void updateFlight() {
 
@@ -1096,8 +1264,11 @@ void setViewFromJson(std::string jsonData, bool flyTo) {
       }
     }
 
+    propagateViewUpdatesToViewports();
+
   } catch (...) {
     // If anything goes wrong parsing, just give up
+    propagateViewUpdatesToViewports();
     return;
   }
 }
@@ -1317,6 +1488,7 @@ void buildViewGui() {
       float fovF = fov;
       if (ImGui::SliderFloat(" Field of View", &fovF, minFov, maxFov, "%.2f deg")) {
         fov = fovF;
+        propagateViewUpdatesToViewports();
         requestRedraw();
       };
 
@@ -1338,10 +1510,12 @@ void buildViewGui() {
       if (ImGui::TreeNode("Clip Planes")) {
         if (ImGui::SliderFloat("Near", &nearClip, 0., 10., "%.5f",
                                ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
+          propagateViewUpdatesToViewports();
           requestRedraw();
         }
         if (ImGui::SliderFloat("Far", &farClip, 1., 10000., "%.2f",
                                ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
+          propagateViewUpdatesToViewports();
           requestRedraw();
         }
         float absNearClip, absFarClip;
@@ -1462,6 +1636,283 @@ void setWindowResizable(bool isResizable) {
 
 bool getWindowResizable() { return windowResizable; }
 
+
+// == Viewport helpers
+
+namespace {
+void packCurrentViewportParametersToIndex(int idx) {
+  if (idx < 0) return;
+
+  ViewParameters& vp = state::globalContext.viewportParameters[idx];
+  vp.style = style;
+  vp.upDir = upDir;
+  vp.frontDir = frontDir;
+  vp.moveScale = moveScale;
+  vp.viewRelativeMode = viewRelativeMode;
+  vp.nearClip = nearClip;
+  vp.farClip = farClip;
+  vp.bgColor = bgColor;
+  vp.viewMat = viewMat;
+  vp.fov = fov;
+  vp.viewCenter = viewCenter;
+  vp.projectionMode = projectionMode;
+  vp.midflight = midflight;
+  vp.flightStartTime = flightStartTime;
+  vp.flightEndTime = flightEndTime;
+  vp.flightTargetViewR = flightTargetViewR;
+  vp.flightInitialViewR = flightInitialViewR;
+  vp.flightTargetViewT = flightTargetViewT;
+  vp.flightInitialViewT = flightInitialViewT;
+  vp.flightTargetFov = flightTargetFov;
+  vp.flightInitialFov = flightInitialFov;
+}
+
+void unpackCurrentViewportParametersFromActive() {
+  if (activeViewportIndex < 0) return;
+
+  const ViewParameters& vp = state::globalContext.viewportParameters[activeViewportIndex];
+  style = vp.style;
+  upDir = vp.upDir;
+  frontDir = vp.frontDir;
+  moveScale = vp.moveScale;
+  viewRelativeMode = vp.viewRelativeMode;
+  nearClip = vp.nearClip;
+  farClip = vp.farClip;
+  bgColor = vp.bgColor;
+  viewMat = vp.viewMat;
+  fov = vp.fov;
+  viewCenter = vp.viewCenter;
+  projectionMode = vp.projectionMode;
+  midflight = vp.midflight;
+  flightStartTime = vp.flightStartTime;
+  flightEndTime = vp.flightEndTime;
+  flightTargetViewR = vp.flightTargetViewR;
+  flightInitialViewR = vp.flightInitialViewR;
+  flightTargetViewT = vp.flightTargetViewT;
+  flightInitialViewT = vp.flightInitialViewT;
+  flightTargetFov = vp.flightTargetFov;
+  flightInitialFov = vp.flightInitialFov;
+}
+
+} // namespace
+
+
+int getActiveViewportIndex() { return activeViewportIndex; }
+
+int getActiveViewportBufferWidth() {
+  return state::globalContext.viewportParameters[activeViewportIndex].viewportBufferWidth;
+}
+
+int getActiveViewportBufferHeight() {
+  return state::globalContext.viewportParameters[activeViewportIndex].viewportBufferHeight;
+}
+
+glm::vec4 getViewportImGuiRect(int32_t viewportInd) {
+  if (viewportInd < 0) viewportInd = activeViewportIndex;
+  const ViewParameters& vp = getViewportParameters(viewportInd);
+  glm::vec2 origin = bufferIndsToScreenCoords(vp.viewportPosX, vp.viewportPosY);
+  return glm::vec4(origin.x, origin.y, vp.viewportWindowWidth, vp.viewportWindowHeight);
+}
+
+void activateViewport(int viewportInd) {
+  if (viewportInd < 0 || viewportInd >= getNumViewports()) {
+    error("Invalid viewport index " + std::to_string(viewportInd));
+  }
+  packCurrentViewportParametersToIndex(activeViewportIndex);
+  activeViewportIndex = viewportInd;
+  unpackCurrentViewportParametersFromActive();
+}
+
+int getNumViewports() { return state::globalContext.viewportParameters.size(); }
+
+void setNumViewports(int count) {
+  checkInitialized();
+  if (count <= 0) error("Invalid viewport count " + std::to_string(count));
+  if (count > maxNumViewports) error("At most " + std::to_string(maxNumViewports) + " viewports are supported.");
+
+
+  // save current parameters
+  if (getNumViewports() > 0) {
+    packCurrentViewportParametersToIndex(activeViewportIndex);
+  }
+
+  int oldCount = getNumViewports();
+  state::globalContext.viewportParameters.resize(count);
+
+  // Copy the current active view parameters into all new views to initialize them.
+  // Newly added viewports start at zero size until positioned via setActiveViewportRelativeSize()
+  // so allocating many small viewports never transiently allocates full-window buffers for each.
+  for (int i = oldCount; i < count; i++) {
+    packCurrentViewportParametersToIndex(i);
+    state::globalContext.viewportParameters[i].viewportRelativePosX = 0.0f;
+    state::globalContext.viewportParameters[i].viewportRelativePosY = 0.0f;
+    state::globalContext.viewportParameters[i].viewportRelativeWidth = 0.0f;
+    state::globalContext.viewportParameters[i].viewportRelativeHeight = 0.0f;
+  }
+
+  // Clamp active index to valid range after shrinking, and unpack BEFORE resizing buffers
+  // (which packs the active viewport).
+  if (activeViewportIndex >= count) {
+    activeViewportIndex = count - 1;
+    unpackCurrentViewportParametersFromActive();
+  }
+
+  render::engine->ensureSceneTargetsAllocated(count);
+  render::engine->setActiveSceneTarget(activeViewportIndex);
+
+  requestRedraw();
+}
+
+void setActiveViewportRelativeLocation(float posX, float posY) {
+  checkInitialized();
+  if (posX < 0 || posX > 1 || posY < 0 || posY > 1) {
+    error("Invalid viewport location " + std::to_string(posX) + " x " + std::to_string(posY));
+  }
+  state::globalContext.viewportParameters[activeViewportIndex].viewportRelativePosX = posX;
+  state::globalContext.viewportParameters[activeViewportIndex].viewportRelativePosY = posY;
+  render::engine->resizeScreenBuffersAndSetViewports();
+  requestRedraw();
+}
+
+void setActiveViewportRelativeSize(float width, float height) {
+  checkInitialized();
+  if (width < 0 || width > 1 || height < 0 || height > 1) {
+    error("Invalid viewport size " + std::to_string(width) + " x " + std::to_string(height));
+  }
+  state::globalContext.viewportParameters[activeViewportIndex].viewportRelativeWidth = width;
+  state::globalContext.viewportParameters[activeViewportIndex].viewportRelativeHeight = height;
+  render::engine->resizeScreenBuffersAndSetViewports();
+  requestRedraw();
+}
+
+bool getViewportsShareNavigation() { return state::globalContext.viewportsShareNavigation; }
+
+void setViewportsShareNavigation(bool shareNavigation) {
+  state::globalContext.viewportsShareNavigation = shareNavigation;
+  propagateViewUpdatesToViewports();
+  requestRedraw();
+}
+
+void createViewportGrid(int gridWidth, int gridHeight) {
+  // make sure the dimensions are reasonable
+  if (gridWidth <= 0 || gridHeight <= 0) {
+    error("Invalid viewport grid dimensions " + std::to_string(gridWidth) + " x " + std::to_string(gridHeight));
+  }
+
+  setNumViewports(gridWidth * gridHeight);
+
+  // initialize all viewports to the same parameters as the current active view, so they start in a known state
+  for (int i = 0; i < getNumViewports(); i++) {
+    packCurrentViewportParametersToIndex(i);
+  }
+
+  float cellW = 1.0f / gridWidth;
+  float cellH = 1.0f / gridHeight;
+  for (int i = 0; i < gridHeight; i++) {
+    for (int j = 0; j < gridWidth; j++) {
+      int ind = i * gridWidth + j;
+      ViewParameters& vp = state::globalContext.viewportParameters[ind];
+      // note: this intentionally puts the first grid viewport in the upper-left, matching convention from other
+      // software
+      vp.viewportRelativePosX = static_cast<float>(j) / gridWidth;
+      vp.viewportRelativePosY = static_cast<float>(i) / gridHeight;
+      vp.viewportRelativeWidth = cellW;
+      vp.viewportRelativeHeight = cellH;
+    }
+  }
+
+  activateViewport(0);
+  render::engine->resizeScreenBuffersAndSetViewports();
+  requestRedraw();
+}
+
+void createInitialViewport() {
+  state::globalContext.viewportParameters.resize(1);
+  packCurrentViewportParametersToIndex(0);
+  activeViewportIndex = 0;
+  state::globalContext.viewportParameters[0].viewportRelativePosX = 0.0;
+  state::globalContext.viewportParameters[0].viewportRelativePosY = 0.0;
+  state::globalContext.viewportParameters[0].viewportRelativeWidth = 1.0;
+  state::globalContext.viewportParameters[0].viewportRelativeHeight = 1.0;
+  if (!render::engine) error("Render engine not initialized. You called an internal function at the wrong time.");
+  render::engine->ensureSceneTargetsAllocated(1);
+  render::engine->setActiveSceneTarget(0);
+}
+
+void clearViewports() {
+  state::globalContext.viewportParameters.clear();
+  activeViewportIndex = -1;
+}
+
+void validateViewports() {
+  if (getNumViewports() == 0)
+    error(
+        "No viewports of the scene exist. Either viewports were configured wrong, program flow has been called in the "
+        "wrong order.");
+}
+
+void updateViewportDimensions() {
+  packCurrentViewportParametersToIndex(activeViewportIndex); // active values are duplicated
+  for (int32_t iV = 0; iV < getNumViewports(); iV++) {
+    ViewParameters& vp = state::globalContext.viewportParameters[iV];
+
+    // Compute pos and size by rounding both edges independently in buffer space, so that adjacent viewports sharing
+    // a boundary always snap to the same integer pixel (no cracks or overlaps), and derive screen-coord dimensions
+    // by the DPI scale factor so screen-coord and buffer-ind frames agree exactly.
+    vp.viewportPosX = (int)std::round(view::bufferWidth * vp.viewportRelativePosX);
+    vp.viewportPosY = (int)std::round(view::bufferHeight * vp.viewportRelativePosY);
+    vp.viewportBufferWidth =
+        (int)std::round(view::bufferWidth * (vp.viewportRelativePosX + vp.viewportRelativeWidth)) - vp.viewportPosX;
+    vp.viewportBufferHeight =
+        (int)std::round(view::bufferHeight * (vp.viewportRelativePosY + vp.viewportRelativeHeight)) - vp.viewportPosY;
+    float scaleX = (view::bufferWidth > 0) ? static_cast<float>(view::windowWidth) / view::bufferWidth : 1.0f;
+    float scaleY = (view::bufferHeight > 0) ? static_cast<float>(view::windowHeight) / view::bufferHeight : 1.0f;
+    vp.viewportWindowWidth = vp.viewportBufferWidth * scaleX;
+    vp.viewportWindowHeight = vp.viewportBufferHeight * scaleY;
+  }
+  unpackCurrentViewportParametersFromActive();
+}
+
+void propagateViewUpdatesToViewports() {
+  if (!getViewportsShareNavigation()) return;
+
+  for (int32_t iV = 0; iV < getNumViewports(); iV++) {
+    ViewParameters& vp = state::globalContext.viewportParameters[iV];
+    vp.style = style;
+    vp.upDir = upDir;
+    vp.frontDir = frontDir;
+    vp.moveScale = moveScale;
+    vp.viewRelativeMode = viewRelativeMode;
+    vp.nearClip = nearClip;
+    vp.farClip = farClip;
+    vp.bgColor = bgColor;
+    vp.viewMat = viewMat;
+    vp.fov = fov;
+    vp.viewCenter = viewCenter;
+    vp.projectionMode = projectionMode;
+    vp.midflight = midflight;
+    vp.flightStartTime = flightStartTime;
+    vp.flightEndTime = flightEndTime;
+    vp.flightTargetViewR = flightTargetViewR;
+    vp.flightInitialViewR = flightInitialViewR;
+    vp.flightTargetViewT = flightTargetViewT;
+    vp.flightInitialViewT = flightInitialViewT;
+    vp.flightTargetFov = flightTargetFov;
+    vp.flightInitialFov = flightInitialFov;
+  }
+}
+
+const ViewParameters& getViewportParameters(int32_t viewportInd) {
+  if (viewportInd < 0) viewportInd = activeViewportIndex;
+  if (viewportInd < 0 || viewportInd >= getNumViewports()) {
+    error("Invalid viewport index " + std::to_string(viewportInd));
+  }
+  if (viewportInd == activeViewportIndex) {
+    // write them to the structure in case they have been changed since it was activated
+    packCurrentViewportParametersToIndex(activeViewportIndex);
+  }
+  return state::globalContext.viewportParameters[viewportInd];
+}
 
 } // namespace view
 } // namespace polyscope

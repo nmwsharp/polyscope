@@ -3,8 +3,8 @@
 #include "polyscope/render/engine.h"
 
 #ifdef POLYSCOPE_BACKEND_OPENGL3_ENABLED
-#include "polyscope/render/opengl/gl_engine.h"
 #include "polyscope/render/managed_buffer.h"
+#include "polyscope/render/opengl/gl_engine.h"
 
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
@@ -519,7 +519,8 @@ void checkTextureSize1D(unsigned int sizeX) {
 void checkTextureSize2D(unsigned int sizeX, unsigned int sizeY) {
   GLint maxTexSize = 0;
   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
-  if (maxTexSize > 0 && (sizeX > static_cast<unsigned int>(maxTexSize) || sizeY > static_cast<unsigned int>(maxTexSize))) {
+  if (maxTexSize > 0 &&
+      (sizeX > static_cast<unsigned int>(maxTexSize) || sizeY > static_cast<unsigned int>(maxTexSize))) {
     exception("OpenGL error: 2D texture size (" + std::to_string(sizeX) + " x " + std::to_string(sizeY) +
               ") exceeds GL_MAX_TEXTURE_SIZE (" + std::to_string(maxTexSize) + ").");
   }
@@ -527,8 +528,9 @@ void checkTextureSize2D(unsigned int sizeX, unsigned int sizeY) {
 void checkTextureSize3D(unsigned int sizeX, unsigned int sizeY, unsigned int sizeZ) {
   GLint maxTexSize = 0;
   glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &maxTexSize);
-  if (maxTexSize > 0 && (sizeX > static_cast<unsigned int>(maxTexSize) || sizeY > static_cast<unsigned int>(maxTexSize) ||
-                         sizeZ > static_cast<unsigned int>(maxTexSize))) {
+  if (maxTexSize > 0 &&
+      (sizeX > static_cast<unsigned int>(maxTexSize) || sizeY > static_cast<unsigned int>(maxTexSize) ||
+       sizeZ > static_cast<unsigned int>(maxTexSize))) {
     exception("OpenGL error: 3D texture size (" + std::to_string(sizeX) + " x " + std::to_string(sizeY) + " x " +
               std::to_string(sizeZ) + ") exceeds GL_MAX_3D_TEXTURE_SIZE (" + std::to_string(maxTexSize) + ").");
   }
@@ -661,7 +663,9 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int 
   checkGLError();
 }
 
-void GLTextureBuffer::setData(const std::vector<glm::vec2>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::vec2>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
 void GLTextureBuffer::setData(const std::vector<glm::vec3>& data, size_t offset, size_t count) {
 
   size_t n = std::min(count, data.size());
@@ -785,17 +789,39 @@ void GLTextureBuffer::setData(const std::vector<double>& data, size_t offset, si
 
   checkGLError();
 };
-void GLTextureBuffer::setData(const std::vector<int32_t>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::ivec2>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::ivec3>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::ivec4>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<uint32_t>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::uvec3>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::uvec4>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<int32_t>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::ivec2>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::ivec3>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::ivec4>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<uint32_t>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::uvec3>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::uvec4>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
 
 
 void GLTextureBuffer::setFilterMode(FilterMode newMode) {
@@ -1115,7 +1141,7 @@ std::vector<unsigned char> GLFrameBuffer::readBuffer() {
   return buff;
 }
 
-void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
+void GLFrameBuffer::blitTo(FrameBuffer* targetIn, int targetPosX, int targetPosY) {
 
   // it _better_ be a GL buffer
   GLFrameBuffer* target = dynamic_cast<GLFrameBuffer*>(targetIn);
@@ -1125,8 +1151,8 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
   bindForRendering();
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->getHandle());
 
-  glBlitFramebuffer(0, 0, getSizeX(), getSizeY(), 0, 0, target->getSizeX(), target->getSizeY(), GL_COLOR_BUFFER_BIT,
-                    GL_LINEAR);
+  glBlitFramebuffer(0, 0, getSizeX(), getSizeY(), targetPosX, targetPosY, targetPosX + getSizeX(),
+                    targetPosY + getSizeY(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
   checkGLError();
 }
 
@@ -1288,7 +1314,8 @@ void GLCompiledProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
       return;
     }
   }
-  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, -1, nullptr, nullptr});
+  attributes.push_back(
+      GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, -1, nullptr, nullptr});
 }
 
 void GLCompiledProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
@@ -1309,8 +1336,7 @@ void GLCompiledProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
     if (t.name == newTexture.name) {
 
       // if it occurs twice, confirm that the occurences match
-      if (t.type != newTexture.type)
-        exception("texture " + t.name + " appears twice in program with different types");
+      if (t.type != newTexture.type) exception("texture " + t.name + " appears twice in program with different types");
 
       return;
     }
@@ -1367,7 +1393,8 @@ void GLShaderProgram::createBuffers() {
   checkGLError();
 }
 
-void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer, ManagedBufferBase* source) {
+void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer,
+                                   ManagedBufferBase* source) {
   bindVAO();
   checkGLError();
 
@@ -2103,7 +2130,8 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
                        (bufDim == 3 && t.type == ShaderTextureType::Texture3D);
     if (!typeMatches) {
       throw std::invalid_argument("Tried to use texture " + name + " with mismatched type " +
-                                  shaderTextureTypeName(t.type) + " for " + std::to_string(bufDim) + "D texture buffer");
+                                  shaderTextureTypeName(t.type) + " for " + std::to_string(bufDim) +
+                                  "D texture buffer");
     }
 
     t.textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBuffer);
@@ -2316,7 +2344,7 @@ void GLShaderProgram::validateData() {
 
   // Validate drawCount.
   if (drawCount == INVALID_IND_32) {
-    throw std::invalid_argument( "drawCount has not been set; call setDrawCount() before drawing");
+    throw std::invalid_argument("drawCount has not been set; call setDrawCount() before drawing");
   }
   if (useIndex) {
     if (indexBuffer->getBufferSize() < static_cast<uint64_t>(drawCount))
@@ -2327,11 +2355,12 @@ void GLShaderProgram::validateData() {
       if (a.location == -1) continue;
       int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
       if (a.buff->getBufferSize() / static_cast<uint64_t>(compatCount) < static_cast<uint64_t>(drawCount))
-        throw std::invalid_argument("Attribute " + a.name + " buffer has fewer entries (" + std::to_string(a.buff->getBufferSize()) +
-                                    ") than drawCount (" + std::to_string(drawCount) + ") [size ratio is " + std::to_string(compatCount) + "]");
+        throw std::invalid_argument(
+            "Attribute " + a.name + " buffer has fewer entries (" + std::to_string(a.buff->getBufferSize()) +
+            ") than drawCount (" + std::to_string(drawCount) + ") [size ratio is " + std::to_string(compatCount) + "]");
     }
   }
-  
+
   // Check instanced (if applicable)
   if (drawMode == DrawMode::TrianglesInstanced || drawMode == DrawMode::TriangleStripInstanced) {
     if (instanceCount == INVALID_IND_32) {
@@ -2834,8 +2863,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("PREMULTIPLY_LIT_COLOR", PREMULTIPLY_LIT_COLOR);
   registerShaderRule("CULL_POS_FROM_VIEW", CULL_POS_FROM_VIEW);
   registerShaderRule("PROJ_AND_INV_PROJ_MAT", PROJ_AND_INV_PROJ_MAT);
-  registerShaderRule("BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE", BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE);
-  registerShaderRule("BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC", BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC);
+  registerShaderRule("BUILD_RAY_FOR_FRAGMENT_DYNAMIC", BUILD_RAY_FOR_FRAGMENT_DYNAMIC);
 
   // Lighting and shading things
   registerShaderRule("LIGHT_MATCAP", LIGHT_MATCAP);

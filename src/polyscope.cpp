@@ -39,7 +39,7 @@ namespace {
 struct ContextEntry {
   ImGuiContext* context;
   ImPlotContext* plotContext;
-  std ::function<void()> callback;
+  std::function<void()> callback;
   bool drawDefaultUI;
 };
 std::vector<ContextEntry> contextStack;
@@ -247,6 +247,7 @@ void init(std::string backend) {
   internal::contextStackSize++;
 
   view::invalidateView();
+  view::createInitialViewport();
 
   state::initialized = true;
   state::doDefaultMouseInteraction = true;
@@ -422,6 +423,8 @@ void drawStructures() {
 
   for (auto& catMap : state::structures) {
     for (auto& s : catMap.second) {
+      if (!s.second->getViewportVisibility()) continue;
+
       s.second->draw();
     }
   }
@@ -437,6 +440,8 @@ void drawStructuresDelayed() {
   // drawn
   for (auto& catMap : state::structures) {
     for (auto& s : catMap.second) {
+      if (!s.second->getViewportVisibility()) continue;
+
       s.second->drawDelayed();
     }
   }
@@ -480,6 +485,14 @@ void processInputEvents() {
     // === Mouse inputs
     if (!io.WantCaptureMouse && !widgetCapturedMouse) {
 
+      // Activate the viewport under the mouse on click (affects widget placement etc, regardless of nav sharing)
+      if (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1)) {
+        int clickedViewport = view::screenCoordsToViewportInd({io.MousePos.x, io.MousePos.y});
+        if (clickedViewport != view::getActiveViewportIndex()) {
+          view::activateViewport(clickedViewport);
+        }
+      }
+
       { // Process scroll via "mouse wheel" (which might be a touchpad)
         float xoffset = io.MouseWheelH;
         float yoffset = io.MouseWheel;
@@ -494,12 +507,19 @@ void processInputEvents() {
         // which might involve intentionally holding shift)
 
         bool scrollClipPlane = io.KeyShift && !io.KeyCtrl;
-        if (scrollClipPlane && clipPlaneOffset != 0.0f) {
-          view::processClipPlaneShift(clipPlaneOffset);
-          requestRedraw();
-        }
-        if (!scrollClipPlane && scrollOffset != 0.0f) {
-          view::processZoom(0.5 * scrollOffset);
+        bool doClipScroll = scrollClipPlane && clipPlaneOffset != 0.0f;
+        bool doZoomScroll = !scrollClipPlane && scrollOffset != 0.0f;
+        if (doClipScroll || doZoomScroll) {
+          int hoveredViewport = view::screenCoordsToViewportInd({io.MousePos.x, io.MousePos.y});
+          if (hoveredViewport != view::getActiveViewportIndex()) {
+            view::activateViewport(hoveredViewport);
+          }
+          if (doClipScroll) {
+            view::processClipPlaneShift(clipPlaneOffset);
+          }
+          if (doZoomScroll) {
+            view::processZoom(0.5 * scrollOffset);
+          }
           requestRedraw();
         }
       }
@@ -509,6 +529,15 @@ void processInputEvents() {
         bool dragLeft = ImGui::IsMouseDragging(0);
         bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
         if (dragLeft || dragRight) {
+
+          // Activate the viewport under the initial click
+          {
+            ImVec2 clickPos = dragLeft ? io.MouseClickedPos[0] : io.MouseClickedPos[1];
+            int clickedViewport = view::screenCoordsToViewportInd({clickPos.x, clickPos.y});
+            if (clickedViewport != view::getActiveViewportIndex()) {
+              view::activateViewport(clickedViewport);
+            }
+          }
 
           glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
           dragDistSinceLastRelease += std::abs(dragDelta.x);
@@ -523,11 +552,16 @@ void processInputEvents() {
             view::processZoom(dragDelta.y * 5);
           }
           if (isRotate) {
-            glm::vec2 currPos{io.MousePos.x / view::windowWidth,
-                              (view::windowHeight - io.MousePos.y) / view::windowHeight};
-            currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
-            if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
-              view::processRotate(currPos - 2.0f * dragDelta, currPos);
+            // Normalize current and previous mouse positions relative to the active viewport for arc-based rotation.
+            glm::vec4 svRect = view::getViewportImGuiRect();
+            if (svRect.z > 0.0f && svRect.w > 0.0f) {
+              glm::vec2 currPos{(io.MousePos.x - svRect.x) / svRect.z,
+                                (svRect.w - (io.MousePos.y - svRect.y)) / svRect.w};
+              currPos = (currPos * 2.0f) - glm::vec2{1.0f, 1.0f};
+              glm::vec2 prevPos{((io.MousePos.x - io.MouseDelta.x) - svRect.x) / svRect.z,
+                                (svRect.w - ((io.MousePos.y - io.MouseDelta.y) - svRect.y)) / svRect.w};
+              prevPos = (prevPos * 2.0f) - glm::vec2{1.0f, 1.0f};
+              view::processRotate(prevPos, currPos);
             }
           }
           if (isTranslate) {
@@ -612,22 +646,19 @@ void renderScene() {
 
   render::engine->applyTransparencySettings();
 
-  render::engine->sceneBuffer->clearColor = {0., 0., 0.};
-  render::engine->sceneBuffer->clearAlpha = 0.;
-  render::engine->sceneBuffer->clear();
-
-  if (!render::engine->bindSceneBuffer()) return;
-
-  // If a view has never been set, this will set it to the home view
-  view::ensureViewValid();
-
   if (!options::renderScene) return;
+
+  if (view::getNumViewports() == 0) {
+    error("there are no viewports");
+  }
+
+  // We internally change the active viewport to render; save it here so we can restore at the end
+  int savedActiveViewport = view::getActiveViewportIndex();
 
   if (render::engine->getTransparencyMode() == TransparencyMode::Pretty) {
     // Special depth peeling case: multiple render passes
     // We will perform several "peeled" rounds of rendering in to the usual scene buffer. After each, we will manually
     // composite in to the final scene buffer.
-
 
     // Clear the final buffer explicitly since we will gradually composite in to it rather than just blitting directly
     // as in normal rendering.
@@ -635,65 +666,126 @@ void renderScene() {
     render::engine->sceneBufferFinal->clearAlpha = 0;
     render::engine->sceneBufferFinal->clear();
 
-    render::engine->setDepthMode(DepthMode::Less); // we need depth to be enabled for the clear below to do anything
-    render::engine->sceneDepthMinFrame->clear();
+    for (int viewportInd = 0; viewportInd < view::getNumViewports(); viewportInd++) {
+      view::activateViewport(viewportInd);
+      view::ensureViewValid();
+      view::updateFlight();
+      render::engine->setActiveSceneTarget(viewportInd);
+
+      view::ViewParameters vp = view::getViewportParameters(viewportInd);
+      int ssaa = render::engine->getSSAAFactor();
+
+      render::engine->setDepthMode(DepthMode::Less); // we need depth to be enabled for the clear below to do anything
+      render::engine->sceneDepthMinFrame->clear();
+
+      for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
+        bool isRedraw = iPass > 0;
+        internal::renderPassIsRedraw = isRedraw;
+
+        if (!render::engine->bindSceneBuffer()) {
+          // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
+          break;
+        }
+        render::engine->clearSceneBuffer();
+
+        render::engine->applyTransparencySettings();
+        drawStructures();
+
+        // Draw ground plane, slicers, etc
+        render::engine->groundPlane.draw(isRedraw);
+        if (!isRedraw) {
+          // Only on first pass (kinda weird, but works out, and doesn't really matter)
+          renderSlicePlanes();
+        }
+
+        render::engine->applyTransparencySettings();
+        drawStructuresDelayed();
+
+        // Composite the result of this pass in to the result buffer.
+        // Set the viewport to the viewport's region in sceneBufferFinal so the fullscreen quad composites
+        // only into the correct portion of the final buffer.
+        // (viewportPosY is y-from-top like everywhere else, but OpenGL viewports have y=0 at the bottom, so flip it)
+        int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
+        render::engine->sceneBufferFinal->setViewport(ssaa * vp.viewportPosX, ssaa * viewportPosYFromBottom,
+                                                      ssaa * vp.viewportBufferWidth, ssaa * vp.viewportBufferHeight);
+        render::engine->sceneBufferFinal->bindForRendering();
+        render::engine->setDepthMode(DepthMode::Disable);
+        render::engine->setBlendMode(BlendMode::AlphaUnder);
+        render::engine->compositePeel->setTextureFromBuffer("t_image", render::engine->sceneColor.get());
+        render::engine->compositePeel->draw();
+
+        // Update the minimum depth texture
+        render::engine->updateMinDepthTexture();
+      }
+
+      internal::renderPassIsRedraw = false; // reset to usual value
+    }
+
+    // Restore sceneBufferFinal viewport to cover the full buffer
+    int ssaaFactor = render::engine->getSSAAFactor();
+    render::engine->sceneBufferFinal->setViewport(0, 0, ssaaFactor * view::bufferWidth,
+                                                  ssaaFactor * view::bufferHeight);
+
+  } else {
+    // Normal case: single render pass
 
 
-    for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
-      bool isRedraw = iPass > 0;
-      internal::renderPassIsRedraw = isRedraw;
+    internal::renderPassIsRedraw = false;
 
-      render::engine->bindSceneBuffer();
-      render::engine->clearSceneBuffer();
+    for (int viewportInd = 0; viewportInd < view::getNumViewports(); viewportInd++) {
+      view::activateViewport(viewportInd);
+      view::ensureViewValid();
+      view::updateFlight();
+      render::engine->setActiveSceneTarget(viewportInd); // sets sceneBuffer (etc) to the current target viewport buffer
+
+      render::engine->sceneBuffer->clearColor = {0., 0., 0.};
+      render::engine->sceneBuffer->clearAlpha = 0.;
+      render::engine->sceneBuffer->clear();
+      if (!render::engine->bindSceneBuffer()) {
+        // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
+        continue;
+      }
 
       render::engine->applyTransparencySettings();
       drawStructures();
 
-      // Draw ground plane, slicers, etc
-      render::engine->groundPlane.draw(isRedraw);
-      if (!isRedraw) {
-        // Only on first pass (kinda weird, but works out, and doesn't really matter)
-        renderSlicePlanes();
-      }
+      render::engine->groundPlane.draw();
+      renderSlicePlanes();
 
       render::engine->applyTransparencySettings();
       drawStructuresDelayed();
 
-      // Composite the result of this pass in to the result buffer
-      render::engine->sceneBufferFinal->bind();
-      render::engine->setDepthMode(DepthMode::Disable);
-      render::engine->setBlendMode(BlendMode::AlphaUnder);
-      render::engine->compositePeel->draw();
-
-      // Update the minimum depth texture
-      render::engine->updateMinDepthTexture();
+      view::ViewParameters vp = view::getViewportParameters(viewportInd);
+      int ssaaFactor = render::engine->getSSAAFactor();
+      // (viewportPosY is y-from-top like everywhere else, but OpenGL has y=0 at the bottom, so flip it)
+      int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
+      render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), ssaaFactor * vp.viewportPosX,
+                                          ssaaFactor * viewportPosYFromBottom);
     }
-    internal::renderPassIsRedraw = false; // reset to usual value
-
-
-  } else {
-    // Normal case: single render pass
-    internal::renderPassIsRedraw = false;
-
-    render::engine->applyTransparencySettings();
-    drawStructures();
-
-    render::engine->groundPlane.draw();
-    renderSlicePlanes();
-
-    render::engine->applyTransparencySettings();
-    drawStructuresDelayed();
-
-    render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }
+
+  // restore the active viewport as it was before the render call
+  view::activateViewport(savedActiveViewport);
+  render::engine->setActiveSceneTarget(savedActiveViewport);
 }
 
 void renderSceneToScreen() {
   render::engine->bindDisplay();
   if (options::debugDrawPickBuffer) {
-    // special debug draw
-    pick::evaluatePickQuery(-1, -1); // populate the buffer
-    render::engine->pickFramebuffer->blitTo(render::engine->displayBuffer.get());
+    // special debug draw: render and blit each viewport's pick buffer into its region of displayBuffer
+    render::engine->displayBuffer->clearColor = {0., 0., 0.};
+    render::engine->displayBuffer->clearAlpha = 1.;
+    render::engine->displayBuffer->clear();
+    int savedActiveViewport = view::getActiveViewportIndex();
+    for (int viewportInd = 0; viewportInd < view::getNumViewports(); viewportInd++) {
+      view::activateViewport(viewportInd);
+      pick::evaluatePickQuery(-1, -1); // populate the buffer for this viewport
+      view::ViewParameters vp = view::getViewportParameters(viewportInd);
+      int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
+      render::engine->pickFramebuffer->blitTo(render::engine->displayBuffer.get(), vp.viewportPosX,
+                                              viewportPosYFromBottom);
+    }
+    view::activateViewport(savedActiveViewport);
   } else {
     render::engine->applyLightingTransform(render::engine->sceneColorFinal);
   }
@@ -893,13 +985,20 @@ void buildPolyscopeGui() {
     if (ImGui::Button("Force refresh")) {
       refresh();
     }
+
+    ImGui::Text("Active viewport: %d / %d", view::getActiveViewportIndex(), view::getNumViewports());
+
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
     ImGui::Checkbox("Always redraw", &options::alwaysRedraw);
 
     static bool showDebugTextures = false;
     ImGui::Checkbox("Show debug textures", &showDebugTextures);
     if (showDebugTextures) {
-      render::engine->showTextureInImGuiWindow("Scene", render::engine->sceneColor.get());
+      for (int32_t i = 0; i < view::getNumViewports(); i++) {
+        render::engine->showTextureInImGuiWindow("Viewport " + std::to_string(i),
+                                                 render::engine->sceneColorTargets[i].get());
+      }
+
       render::engine->showTextureInImGuiWindow("Scene Final", render::engine->sceneColorFinal.get());
     }
     ImGui::TreePop();
@@ -997,6 +1096,10 @@ void buildPickGui() {
 
     ImGui::Text("screen coordinates: (%.2f,%.2f)  depth: %g", selection.screenCoords.x, selection.screenCoords.y,
                 selection.depth);
+    if (view::getNumViewports() > 1) {
+      ImGui::Text("viewport: %d  local coordinates: (%.2f,%.2f)", selection.viewportInd,
+                  selection.viewportScreenCoords.x, selection.viewportScreenCoords.y);
+    }
     ImGui::Text("world position: <%g, %g, %g>", selection.position.x, selection.position.y, selection.position.z);
     ImGui::NewLine();
 
@@ -1068,7 +1171,6 @@ void draw(bool withUI, bool withContextCallback) {
     render::engine->ImGuiNewFrame();
 
     processInputEvents();
-    view::updateFlight();
     showDelayedWarnings();
   }
 
@@ -1109,8 +1211,8 @@ void draw(bool withUI, bool withContextCallback) {
 
   // Draw structures in the scene
   if (redrawNextFrame || options::alwaysRedraw) {
-    renderScene();
     redrawNextFrame = false;
+    renderScene();
   }
   renderSceneToScreen();
 
@@ -1154,6 +1256,7 @@ void mainLoopIteration() {
 void show(size_t forFrames) {
 
   checkInitialized();
+  view::validateViewports();
 
   if (isHeadless() && forFrames == 0) {
     info("You called show() while in headless mode. In headless mode there is no display to create windows on. By "
@@ -1238,6 +1341,7 @@ void shutdown(bool allowMidFrameShutdown) {
   }
 
   removeEverything();
+  view::clearViewports();
 
   // Shut down the render engine
   render::engine->shutdown();
@@ -1494,12 +1598,6 @@ void processLazyProperties() {
   //
   // There is a second function processLazyPropertiesOutsideOfImGui() which handles a few more that can only be set
   // at limited times when an ImGui frame is not active.
-
-  // projection mode
-  if (internal::lazy::projectionMode != view::projectionMode) {
-    internal::lazy::projectionMode = view::projectionMode;
-    view::setProjectionMode(view::projectionMode);
-  }
 
   // transparency mode
   if (internal::lazy::transparencyMode != options::transparencyMode) {

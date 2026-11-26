@@ -108,8 +108,7 @@ void GLEngineGLFW::initialize() {
 
   {
     std::stringstream ss;
-    ss << "Backend: openGL3_glfw -- "
-       << "Loaded openGL version: " << glGetString(GL_VERSION);
+    ss << "Backend: openGL3_glfw -- " << "Loaded openGL version: " << glGetString(GL_VERSION);
     info(0, ss.str());
   }
 
@@ -329,9 +328,7 @@ void GLEngineGLFW::updateWindowSize(bool force) {
     view::bufferHeight = newBufferHeight;
     view::windowWidth = newWindowWidth;
     view::windowHeight = newWindowHeight;
-
-    render::engine->resizeScreenBuffers();
-    render::engine->setScreenBufferViewports();
+    render::engine->resizeScreenBuffersAndSetViewports();
   }
 }
 

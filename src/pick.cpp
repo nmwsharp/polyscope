@@ -10,13 +10,47 @@
 
 namespace polyscope {
 
+// The workhorse for all of the pick functions below. Takes buffer inds that are LOCAL to the currently ACTIVE viewport.
+// (the public functions below take care of routing to the right viewport and converting coordinates)
+static PickResult pickAtActiveViewportBufferInds(glm::ivec2 bufferInds);
+
 PickResult pickAtScreenCoords(glm::vec2 screenCoords) {
-  int xInd, yInd;
-  glm::ivec2 bufferInds = view::screenCoordsToBufferIndsVec(screenCoords);
-  return pickAtBufferInds(bufferInds);
+  // screenCoords are global, find the viewport they lie in and the local coordinates there
+  glm::vec2 localScreenCoords;
+  int32_t viewportInd;
+  std::tie(localScreenCoords, viewportInd) = view::screenCoordsGlobalToViewport(screenCoords);
+  return pickViewportAtScreenCoords(localScreenCoords, viewportInd);
 }
 
 PickResult pickAtBufferInds(glm::ivec2 bufferInds) {
+  // bufferInds are global, find the viewport they lie in and the local indices there
+  glm::ivec2 localBufferInds;
+  int32_t viewportInd;
+  std::tie(localBufferInds, viewportInd) = view::bufferIndsGlobalToViewport(bufferInds);
+  return pickViewportAtBufferInds(localBufferInds, viewportInd);
+}
+
+PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t viewportInd) {
+  int32_t prevViewport = view::getActiveViewportIndex();
+  if (viewportInd < 0) viewportInd = prevViewport;
+  if (viewportInd != prevViewport) view::activateViewport(viewportInd);
+  glm::ivec2 localBufferInds = view::screenCoordsToBufferIndsVecViewport(screenCoords, viewportInd);
+  PickResult result = pickAtActiveViewportBufferInds(localBufferInds);
+  if (viewportInd != prevViewport) view::activateViewport(prevViewport);
+  return result;
+}
+
+PickResult pickViewportAtBufferInds(glm::ivec2 bufferInds, int32_t viewportInd) {
+  int32_t prevViewport = view::getActiveViewportIndex();
+  if (viewportInd < 0) viewportInd = prevViewport;
+  if (viewportInd != prevViewport) view::activateViewport(viewportInd);
+  PickResult result = pickAtActiveViewportBufferInds(bufferInds); // already local to the viewport, no conversion
+  if (viewportInd != prevViewport) view::activateViewport(prevViewport);
+  return result;
+}
+
+static PickResult pickAtActiveViewportBufferInds(glm::ivec2 bufferInds) {
+  // bufferInds are local to the active viewport
   PickResult result;
 
   // Query the pick buffer
@@ -25,14 +59,23 @@ PickResult pickAtBufferInds(glm::ivec2 bufferInds) {
 
   // Query the depth buffer populated above
   render::FrameBuffer* pickFramebuffer = render::engine->pickFramebuffer.get();
-  float clipDepth = pickFramebuffer->readDepth(bufferInds.x, view::bufferHeight - bufferInds.y);
+  int viewportW = view::getActiveViewportBufferWidth();
+  int viewportH = view::getActiveViewportBufferHeight();
+  float clipDepth = 1.0f;
+  if (bufferInds.x >= 0 && bufferInds.x < viewportW && bufferInds.y >= 0 && bufferInds.y < viewportH) {
+    clipDepth = pickFramebuffer->readDepth(bufferInds.x, viewportH - 1 - bufferInds.y);
+  }
 
   // Transcribe result into return tuple
   result.structure = std::get<0>(rawPickResult);
   result.quantity = std::get<1>(rawPickResult);
-  result.bufferInds = bufferInds;
-  result.screenCoords = view::bufferIndsToScreenCoords(bufferInds);
-  result.position = view::screenCoordsAndDepthToWorldPosition(result.screenCoords, clipDepth);
+  result.viewportInd = view::getActiveViewportIndex();
+  result.viewportBufferInds = bufferInds;
+  result.viewportScreenCoords = view::bufferIndsToScreenCoordsViewport(bufferInds, result.viewportInd);
+  result.bufferInds = view::bufferIndsViewportToGlobal(bufferInds, result.viewportInd);
+  result.screenCoords = view::bufferIndsToScreenCoords(result.bufferInds);
+  result.position =
+      view::viewportScreenCoordsAndDepthToWorldPosition(result.viewportScreenCoords, clipDepth, result.viewportInd);
   result.depth = glm::length(result.position - view::getCameraWorldPosition());
 
 
@@ -204,20 +247,46 @@ uint64_t localIndexToGlobal(std::tuple<Structure*, Quantity*, uint64_t> localPic
   return 0;
 }
 
-std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords) {
-  int xInd, yInd;
-  std::tie(xInd, yInd) = view::screenCoordsToBufferInds(screenCoords);
-  return pickAtBufferCoords(xInd, yInd);
+// === The old, deprecated picking API ===
+//
+// These predate viewports, so with a single viewport (all that older code could have) they must keep behaving exactly
+// as they always have. When using multiple viewports, they follow the same convention as the other viewport-aware
+// functions: the coordinates are LOCAL to the viewport `iView`, where iView < 0 means the active viewport. (Some
+// internal code relies on this, to pick in whatever viewport it is currently rendering.) The non-deprecated
+// polyscope::pickAtScreenCoords() and polyscope::pickAtBufferInds() take global coordinates and find the viewport.
+
+static std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFullInActiveViewport(int xPos, int yPos);
+
+std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords, int32_t iView) {
+  glm::ivec2 localInds = view::screenCoordsToBufferIndsVecViewport(screenCoords, iView);
+  return evaluatePickQuery(localInds.x, localInds.y, iView);
 }
 
-std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos) { return evaluatePickQuery(xPos, yPos); }
+std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos, int32_t iView) {
+  return evaluatePickQuery(xPos, yPos, iView);
+}
 
-std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos, int yPos) {
+std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos, int yPos, int32_t iView) {
+  // the pick is evaluated in the active viewport, so temporarily activate the requested viewport if needed
+  int32_t prevViewport = view::getActiveViewportIndex();
+  if (iView < 0 || iView == prevViewport) {
+    return evaluatePickQueryFullInActiveViewport(xPos, yPos);
+  }
+  view::activateViewport(iView);
+  std::tuple<Structure*, Quantity*, uint64_t> result = evaluatePickQueryFullInActiveViewport(xPos, yPos);
+  view::activateViewport(prevViewport);
+  return result;
+}
+
+static std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFullInActiveViewport(int xPos, int yPos) {
 
   // NOTE: hack used for debugging: if xPos == yPos == -1 we do a pick render but do not query the value.
 
+  int viewportW = view::getActiveViewportBufferWidth();
+  int viewportH = view::getActiveViewportBufferHeight();
+
   // Be sure not to pick outside of buffer
-  if (xPos < -1 || xPos >= view::bufferWidth || yPos < -1 || yPos >= view::bufferHeight) {
+  if (xPos < -1 || xPos >= viewportW || yPos < -1 || yPos >= viewportH) {
     return {nullptr, nullptr, 0};
   }
 
@@ -226,20 +295,22 @@ std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos, int 
   render::engine->setDepthMode(DepthMode::Less);
   render::engine->setBlendMode(BlendMode::Disable);
 
-  pickFramebuffer->resize(view::bufferWidth, view::bufferHeight);
-  pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  pickFramebuffer->resize(viewportW, viewportH);
+  pickFramebuffer->setViewport(0, 0, viewportW, viewportH);
   pickFramebuffer->clearColor = glm::vec3{0., 0., 0.};
   if (!pickFramebuffer->bindForRendering()) return {nullptr, nullptr, 0};
   pickFramebuffer->clear();
 
   // Render pick buffer
   for (auto& cat : state::structures) {
-    for (auto& x : cat.second) {
-      x.second->drawPick();
+    for (auto& s : cat.second) {
+      if (!s.second->getViewportVisibility()) continue;
+      s.second->drawPick();
     }
   }
   for (auto& catMap : state::structures) {
     for (auto& s : catMap.second) {
+      if (!s.second->getViewportVisibility()) continue;
       s.second->drawPickDelayed();
     }
   }
@@ -250,14 +321,14 @@ std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos, int 
   }
 
   // Read from the pick buffer
-  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, view::bufferHeight - yPos);
+  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, viewportH - 1 - yPos);
   uint64_t globalInd = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
 
   return pick::globalIndexToLocal(globalInd);
 }
 
-std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos) {
-  std::tuple<Structure*, Quantity*, uint64_t> t = evaluatePickQueryFull(xPos, yPos);
+std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos, int32_t iView) {
+  std::tuple<Structure*, Quantity*, uint64_t> t = evaluatePickQueryFull(xPos, yPos, iView);
   return std::pair<Structure*, uint64_t>(std::get<0>(t), std::get<2>(t));
 }
 

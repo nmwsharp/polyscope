@@ -226,7 +226,7 @@ void CurveNetwork::drawPickDelayed() {
 std::vector<std::string> CurveNetwork::addCurveNetworkNodeRules(std::vector<std::string> initRules) {
   initRules = addStructureRules(initRules);
 
-  initRules.push_back(view::getCurrentProjectionModeRaycastRule());
+  initRules.push_back("BUILD_RAY_FOR_FRAGMENT_DYNAMIC");
 
   if (nodeRadiusQuantityName != "" || edgeRadiusQuantityName != "") {
     initRules.push_back("SPHERE_VARIABLE_SIZE");
@@ -239,7 +239,7 @@ std::vector<std::string> CurveNetwork::addCurveNetworkNodeRules(std::vector<std:
 std::vector<std::string> CurveNetwork::addCurveNetworkEdgeRules(std::vector<std::string> initRules) {
   initRules = addStructureRules(initRules);
 
-  initRules.push_back(view::getCurrentProjectionModeRaycastRule());
+  initRules.push_back("BUILD_RAY_FOR_FRAGMENT_DYNAMIC");
 
   // use node radius to blend cylinder radius
   if (nodeRadiusQuantityName != "" || edgeRadiusQuantityName != "") {
@@ -381,7 +381,8 @@ void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
   } else if (haveNodeRadiusQuantity) {
     // have just node
     CurveNetworkNodeScalarQuantity& nodeRadQ = resolveNodeRadiusQuantity();
-    program.setAttribute("a_tailRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTailInds), &nodeRadQ.values);
+    program.setAttribute("a_tailRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTailInds),
+                         &nodeRadQ.values);
     program.setAttribute("a_tipRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTipInds), &nodeRadQ.values);
   }
 }

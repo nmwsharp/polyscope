@@ -161,7 +161,7 @@ template <typename QuantityT>
 void VectorQuantity<QuantityT>::createProgram() {
 
   std::vector<std::string> rules =
-      this->quantity.parent.addStructureRules({view::getCurrentProjectionModeRaycastRule(), "SHADE_BASECOLOR"});
+      this->quantity.parent.addStructureRules({"BUILD_RAY_FOR_FRAGMENT_DYNAMIC", "SHADE_BASECOLOR"});
   if (this->quantity.parent.wantsCullPosition()) {
     rules.push_back("VECTOR_CULLPOS_FROM_TAIL");
   }
@@ -241,8 +241,7 @@ TangentVectorQuantity<QuantityT>::TangentVectorQuantity(QuantityT& quantity_,
       tangentVectors(&quantity_, quantity_.uniquePrefix() + "#values", std::vector<glm::vec2>(tangentVectors_)),
       tangentBasisX(&quantity_, quantity_.uniquePrefix() + "#basisX", std::vector<glm::vec3>(tangentBasisX_)),
       tangentBasisY(&quantity_, quantity_.uniquePrefix() + "#basisY", std::vector<glm::vec3>(tangentBasisY_)),
-      vectorRoots(vectorRoots_),
-      nSym(nSym_) {
+      vectorRoots(vectorRoots_), nSym(nSym_) {
   tangentVectors.checkInvalidValues();
   tangentBasisX.checkInvalidValues();
   tangentBasisY.checkInvalidValues();
@@ -287,7 +286,7 @@ template <typename QuantityT>
 void TangentVectorQuantity<QuantityT>::createProgram() {
 
   std::vector<std::string> rules =
-      this->quantity.parent.addStructureRules({view::getCurrentProjectionModeRaycastRule(), "SHADE_BASECOLOR"});
+      this->quantity.parent.addStructureRules({"BUILD_RAY_FOR_FRAGMENT_DYNAMIC", "SHADE_BASECOLOR"});
   if (this->quantity.parent.wantsCullPosition()) {
     rules.push_back("VECTOR_CULLPOS_FROM_TAIL");
   }
