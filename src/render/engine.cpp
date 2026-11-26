@@ -249,6 +249,7 @@ void FrameBuffer::setViewport(int startX, int startY, unsigned int sizeX, unsign
 }
 
 void FrameBuffer::resize(unsigned int newXSize, unsigned int newYSize) {
+  if (newXSize == sizeX && newYSize == sizeY) return;
   bind();
   for (auto& b : renderBuffersColor) {
     b->resize(newXSize, newYSize);

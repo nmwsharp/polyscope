@@ -961,6 +961,7 @@ GLFrameBuffer::~GLFrameBuffer() {
 }
 
 void GLFrameBuffer::bind() {
+  if (render::engine) render::engine->currRenderFramebuffer = nullptr;
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
   checkGLError();
 }
@@ -978,6 +979,7 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<RenderBuffer> renderBufferIn)
   checkGLError();
   renderBuffersColor.push_back(renderBuffer);
   nColorBuffers++;
+  verifiedComplete = false;
 }
 
 void GLFrameBuffer::addDepthBuffer(std::shared_ptr<RenderBuffer> renderBufferIn) {
@@ -995,6 +997,7 @@ void GLFrameBuffer::addDepthBuffer(std::shared_ptr<RenderBuffer> renderBufferIn)
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderBuffer->getHandle());
   checkGLError();
   renderBuffersDepth.push_back(renderBuffer);
+  verifiedComplete = false;
 }
 
 void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferIn) {
@@ -1012,6 +1015,7 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferI
   checkGLError();
   textureBuffersColor.push_back(textureBuffer);
   nColorBuffers++;
+  verifiedComplete = false;
 }
 
 void GLFrameBuffer::addDepthBuffer(std::shared_ptr<TextureBuffer> textureBufferIn) {
@@ -1031,6 +1035,7 @@ void GLFrameBuffer::addDepthBuffer(std::shared_ptr<TextureBuffer> textureBufferI
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, textureBuffer->getHandle(), 0);
   checkGLError();
   textureBuffersDepth.push_back(textureBuffer);
+  verifiedComplete = false;
 }
 
 void GLFrameBuffer::setDrawBuffers() {
@@ -1043,22 +1048,37 @@ void GLFrameBuffer::setDrawBuffers() {
   if (nColorBuffers > 0) {
     glDrawBuffers(nColorBuffers, &buffs.front());
   }
+  verifiedComplete = false;
   checkGLError();
+}
+
+void GLFrameBuffer::resize(unsigned int newXSize, unsigned int newYSize) {
+  if (newXSize == sizeX && newYSize == sizeY) return;
+  FrameBuffer::resize(newXSize, newYSize);
+  verifiedComplete = false;
+  if (render::engine && render::engine->currRenderFramebuffer == this) {
+    render::engine->currRenderFramebuffer = nullptr;
+  }
 }
 
 bool GLFrameBuffer::bindForRendering() {
   verifyBufferSizes();
   bind();
 
-  // Check if the frame buffer is okay
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    // it would be nice to error out here, but it seems that on some platforms this happens even during normal flow.
-    // For instance, on Windows we get an incomplete framebuffer when the application is minimized see
-    // https://github.com/nmwsharp/polyscope/issues/36
+  // Check if the frame buffer is okay. Cache completeness for offscreen FBOs (invalidated on resize / attachment
+  // changes) to avoid synchronous driver stalls from calling glCheckFramebufferStatus() on every bind.
+  if (sizeX == 0 || sizeY == 0) return false;
+  if (handle == 0 || !verifiedComplete) {
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+      // it would be nice to error out here, but it seems that on some platforms this happens even during normal flow.
+      // For instance, on Windows we get an incomplete framebuffer when the application is minimized see
+      // https://github.com/nmwsharp/polyscope/issues/36
 
-    // exception("OpenGL error occurred: framebuffer not complete!");
-    // std::cout << "OpenGL error occurred: framebuffer not complete!\n";
-    return false;
+      // exception("OpenGL error occurred: framebuffer not complete!");
+      // std::cout << "OpenGL error occurred: framebuffer not complete!\n";
+      return false;
+    }
+    if (handle != 0) verifiedComplete = true;
   }
 
   render::engine->currRenderFramebuffer = this;
@@ -1084,7 +1104,9 @@ bool GLFrameBuffer::bindForRendering() {
 }
 
 void GLFrameBuffer::clear() {
-  if (!bindForRendering()) return;
+  if (render::engine->currRenderFramebuffer != this) {
+    if (!bindForRendering()) return;
+  }
 
   glClearColor(clearColor[0], clearColor[1], clearColor[2], clearAlpha);
   glClearDepth(clearDepth);
@@ -1150,9 +1172,10 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn, int targetPosX, int targetPosY
   // target->bindForRendering();
   bindForRendering();
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->getHandle());
+  if (render::engine) render::engine->currRenderFramebuffer = nullptr;
 
   glBlitFramebuffer(0, 0, getSizeX(), getSizeY(), targetPosX, targetPosY, targetPosX + getSizeX(),
-                    targetPosY + getSizeY(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
+                    targetPosY + getSizeY(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
   checkGLError();
 }
 
@@ -1190,7 +1213,23 @@ GLCompiledProgram::GLCompiledProgram(const std::vector<ShaderStageSpecification>
   checkGLError();
 }
 
-GLCompiledProgram::~GLCompiledProgram() { glDeleteProgram(programHandle); }
+inline void useGLProgram(ProgramHandle h) {
+  auto* glEng = static_cast<GLEngine*>(render::engine);
+  if (glEng->boundProgramHandle != h) {
+    glUseProgram(h);
+    glEng->boundProgramHandle = h;
+  }
+}
+
+GLCompiledProgram::~GLCompiledProgram() {
+  if (render::engine) {
+    auto* glEng = static_cast<GLEngine*>(render::engine);
+    if (glEng->boundProgramHandle == programHandle) {
+      glEng->boundProgramHandle = 0;
+    }
+  }
+  glDeleteProgram(programHandle);
+}
 
 void GLCompiledProgram::compileGLProgram(const std::vector<ShaderStageSpecification>& stages) {
 
@@ -1268,7 +1307,7 @@ void GLCompiledProgram::compileGLProgram(const std::vector<ShaderStageSpecificat
 }
 
 void GLCompiledProgram::setDataLocations() {
-  glUseProgram(programHandle);
+  useGLProgram(programHandle);
 
   // Uniforms
   for (GLShaderUniform& u : uniforms) {
@@ -1384,10 +1423,16 @@ void GLShaderProgram::createBuffers() {
                                 std::to_string(nAvailTextureUnits) + ").");
   }
 
-  // Set indices sequentially
-  uint32_t iTexture = 0;
-  for (GLShaderTexture& t : textures) {
-    t.index = iTexture++;
+  // Set indices sequentially and bind sampler locations once (they never change)
+  if (!textures.empty()) {
+    useGLProgram(compiledProgram->getHandle());
+    uint32_t iTexture = 0;
+    for (GLShaderTexture& t : textures) {
+      t.index = iTexture++;
+      if (t.location != -1) {
+        glUniform1i(t.location, t.index);
+      }
+    }
   }
 
   checkGLError();
@@ -1532,7 +1577,7 @@ bool GLShaderProgram::hasUniform(std::string name) {
 
 // Set an integer
 void GLShaderProgram::setUniform(std::string name, int val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1551,7 +1596,7 @@ void GLShaderProgram::setUniform(std::string name, int val) {
 
 // Set an unsigned integer
 void GLShaderProgram::setUniform(std::string name, unsigned int val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1570,7 +1615,7 @@ void GLShaderProgram::setUniform(std::string name, unsigned int val) {
 
 // Set a float
 void GLShaderProgram::setUniform(std::string name, float val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1589,7 +1634,7 @@ void GLShaderProgram::setUniform(std::string name, float val) {
 
 // Set a double --- WARNING casts down to float
 void GLShaderProgram::setUniform(std::string name, double val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1609,7 +1654,7 @@ void GLShaderProgram::setUniform(std::string name, double val) {
 // Set a 4x4 uniform matrix
 // TODO why do we use a pointer here... makes no sense
 void GLShaderProgram::setUniform(std::string name, float* val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1628,7 +1673,7 @@ void GLShaderProgram::setUniform(std::string name, float* val) {
 
 // Set a vector2 uniform
 void GLShaderProgram::setUniform(std::string name, glm::vec2 val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1647,7 +1692,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec2 val) {
 
 // Set a vector3 uniform
 void GLShaderProgram::setUniform(std::string name, glm::vec3 val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1666,7 +1711,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec3 val) {
 
 // Set a vector4 uniform
 void GLShaderProgram::setUniform(std::string name, glm::vec4 val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1685,7 +1730,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec4 val) {
 
 // Set a vector3 uniform from a float array
 void GLShaderProgram::setUniform(std::string name, std::array<float, 3> val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1704,7 +1749,7 @@ void GLShaderProgram::setUniform(std::string name, std::array<float, 3> val) {
 
 // Set a vec4 uniform
 void GLShaderProgram::setUniform(std::string name, float x, float y, float z, float w) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1723,7 +1768,7 @@ void GLShaderProgram::setUniform(std::string name, float x, float y, float z, fl
 
 // Set a int vector2 uniform
 void GLShaderProgram::setUniform(std::string name, glm::ivec2 val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1742,7 +1787,7 @@ void GLShaderProgram::setUniform(std::string name, glm::ivec2 val) {
 
 // Set a int vector3 uniform
 void GLShaderProgram::setUniform(std::string name, glm::ivec3 val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1761,7 +1806,7 @@ void GLShaderProgram::setUniform(std::string name, glm::ivec3 val) {
 
 // Set a int vector4 uniform
 void GLShaderProgram::setUniform(std::string name, glm::ivec4 val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1780,7 +1825,7 @@ void GLShaderProgram::setUniform(std::string name, glm::ivec4 val) {
 
 // Set a uint vector2 uniform
 void GLShaderProgram::setUniform(std::string name, glm::uvec2 val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1799,7 +1844,7 @@ void GLShaderProgram::setUniform(std::string name, glm::uvec2 val) {
 
 // Set a uint vector3 uniform
 void GLShaderProgram::setUniform(std::string name, glm::uvec3 val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1818,7 +1863,7 @@ void GLShaderProgram::setUniform(std::string name, glm::uvec3 val) {
 
 // Set a uint vector4 uniform
 void GLShaderProgram::setUniform(std::string name, glm::uvec4 val) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -2118,7 +2163,6 @@ void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, uns
 }
 
 void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source) {
-  glUseProgram(compiledProgram->getHandle());
 
   // Find the right texture
   for (GLShaderTexture& t : textures) {
@@ -2149,7 +2193,7 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
 
 void GLShaderProgram::setTextureFromAttributeBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer,
                                                     ManagedBufferBase* source) {
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
 
   std::shared_ptr<GLAttributeBuffer> engineExtBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(externalBuffer);
   if (!engineExtBuff) {
@@ -2316,7 +2360,7 @@ void GLShaderProgram::validateData() {
   }
 
   // Check attributes
-  for (GLShaderAttribute a : attributes) {
+  for (const GLShaderAttribute& a : attributes) {
     if (a.location == -1) continue;
     if (!a.buff) {
       throw std::invalid_argument("Attribute " + a.name + " has no buffer attached");
@@ -2327,7 +2371,7 @@ void GLShaderProgram::validateData() {
   }
 
   // Check textures
-  for (GLShaderTexture& t : textures) {
+  for (const GLShaderTexture& t : textures) {
     if (t.location == -1) continue;
     if (!t.isSet) {
       throw std::invalid_argument("Texture " + t.name + " has not been set");
@@ -2351,7 +2395,7 @@ void GLShaderProgram::validateData() {
       throw std::invalid_argument("Index buffer has fewer entries (" + std::to_string(indexBuffer->getBufferSize()) +
                                   ") than drawCount (" + std::to_string(drawCount) + ")");
   } else {
-    for (GLShaderAttribute a : attributes) {
+    for (const GLShaderAttribute& a : attributes) {
       if (a.location == -1) continue;
       int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
       if (a.buff->getBufferSize() / static_cast<uint64_t>(compatCount) < static_cast<uint64_t>(drawCount))
@@ -2395,7 +2439,6 @@ void GLShaderProgram::activateTextures() {
     } else {
       t.textureBuffer->bind();
     }
-    glUniform1i(t.location, t.index);
   }
 }
 
@@ -2413,7 +2456,7 @@ void GLShaderProgram::draw() {
   syncBuffersToDeviceIfNeeded();
   validateData();
 
-  glUseProgram(compiledProgram->getHandle());
+  useGLProgram(compiledProgram->getHandle());
   glBindVertexArray(vaoHandle);
 
   if (usePrimitiveRestart) {

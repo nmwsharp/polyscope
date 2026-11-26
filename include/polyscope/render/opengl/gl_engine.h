@@ -259,6 +259,7 @@ public:
   void addDepthBuffer(std::shared_ptr<TextureBuffer> textureBuffer) override;
 
   void setDrawBuffers() override;
+  void resize(unsigned int newXSize, unsigned int newYSize) override;
 
   // Query pixels
   std::vector<unsigned char> readBuffer() override;
@@ -271,6 +272,7 @@ public:
   uint32_t getNativeBufferID() override;
 
   FrameBufferHandle handle;
+  bool verifiedComplete = false;
 };
 
 // Classes to keep track of attributes and uniforms
@@ -452,6 +454,9 @@ public:
   void setBlendMode(BlendMode newMode) override;
   void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) override;
   void setBackfaceCull(bool newVal) override;
+
+  // Cached currently bound GL program handle (0 = unknown / none)
+  ProgramHandle boundProgramHandle = 0;
 
 
   // === Factory methods

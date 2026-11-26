@@ -286,6 +286,8 @@ void GLEngineGLFW::ImGuiNewFrame() {
 void GLEngineGLFW::ImGuiRender() {
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  boundProgramHandle = 0;
+  currRenderFramebuffer = nullptr;
   clearResourcesPreservedForImguiFrame();
 }
 

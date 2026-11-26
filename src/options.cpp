@@ -73,7 +73,7 @@ std::function<std::tuple<ImFont*, ImFont*>(ImFontAtlas*)> prepareImGuiFontsCallb
 int eglDeviceIndex = -1; // means "try all of them"
 
 // enabled by default in debug mode
-#ifndef NDEBUG
+#ifdef NDEBUG
 bool enableRenderErrorChecks = false;
 #else
 bool enableRenderErrorChecks = true;

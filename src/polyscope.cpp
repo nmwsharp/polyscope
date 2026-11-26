@@ -738,13 +738,13 @@ void renderScene() {
       view::updateFlight();
       render::engine->setActiveSceneTarget(viewportInd); // sets sceneBuffer (etc) to the current target viewport buffer
 
-      render::engine->sceneBuffer->clearColor = {0., 0., 0.};
-      render::engine->sceneBuffer->clearAlpha = 0.;
-      render::engine->sceneBuffer->clear();
       if (!render::engine->bindSceneBuffer()) {
         // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
         continue;
       }
+      render::engine->sceneBuffer->clearColor = {0., 0., 0.};
+      render::engine->sceneBuffer->clearAlpha = 0.;
+      render::engine->sceneBuffer->clear();
 
       render::engine->applyTransparencySettings();
       drawStructures();
