@@ -296,70 +296,85 @@ void GroundPlane::draw(bool isRedraw) {
   }
   */
 
+  bool switchedFramebuffer = false;
+
   // Render the scene to implement the mirror effect
   if (!isRedraw && options::groundPlaneMode == GroundPlaneMode::TileReflection) {
+    if (render::engine->transparencyEnabled()) {
+      // Reflections are skipped when transparency is enabled; ensure the mirror texture has alpha == 0
+      // once (at 1x1) without re-allocating or re-binding on every viewport/frame.
+      if (sceneAltFrameBuffer->getSizeX() != 1 || sceneAltFrameBuffer->getSizeY() != 1) {
+        sceneAltFrameBuffer->resize(1, 1);
+        sceneAltFrameBuffer->setViewport(0, 0, 1, 1);
+        sceneAltFrameBuffer->clearColor = {0.f, 0.f, 0.f};
+        sceneAltFrameBuffer->clearAlpha = 0.0f;
+        sceneAltFrameBuffer->clear();
+        switchedFramebuffer = true;
+      }
+    } else {
+      // Prepare the alternate scene buffers sized to the active viewport
+      // (use a texture 1/4 the area of the viewport buffer, it's supposed to be blurry anyway and this saves perf)
+      unsigned int altW = std::max(1, factor * view::getActiveViewportBufferWidth() / 2);
+      unsigned int altH = std::max(1, factor * view::getActiveViewportBufferHeight() / 2);
+      render::engine->setBlendMode(BlendMode::AlphaOver);
+      render::engine->setDepthMode(DepthMode::Less);
+      sceneAltFrameBuffer->resize(altW, altH);
+      sceneAltFrameBuffer->setViewport(0, 0, altW, altH);
+      render::engine->setCurrentPixelScaling(factor / 2. * options::uiScale);
 
-    // Prepare the alternate scene buffers
-    // (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf)
-    render::engine->setBlendMode(BlendMode::AlphaOver);
-    render::engine->setDepthMode(DepthMode::Less);
-    sceneAltFrameBuffer->resize(factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
-    sceneAltFrameBuffer->setViewport(0, 0, factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
-    render::engine->setCurrentPixelScaling(factor / 2. * options::uiScale);
+      sceneAltFrameBuffer->bindForRendering();
+      sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
+      sceneAltFrameBuffer->clearAlpha = 0.0f;
+      sceneAltFrameBuffer->clear();
+      switchedFramebuffer = true;
 
-    sceneAltFrameBuffer->bindForRendering();
-    sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
-    sceneAltFrameBuffer->clear();
+      // Push a reflected view matrix
+      glm::mat4 origViewMat = view::viewMat;
 
-    // Render to a texture so we can sample from it on the ground
-    sceneAltFrameBuffer->bindForRendering();
+      glm::vec3 mirrorN = baseUp * sign;
+      glm::mat3 mirrorMat3 = glm::mat3(1.0) - 2.0f * glm::outerProduct(mirrorN, mirrorN);
+      glm::vec3 tVec{0., 0., 0.};
+      tVec[iP] = -groundHeight;
+      glm::mat4 mirrorMat =
+          glm::translate(glm::mat4(1.0), -tVec) * glm::mat4(mirrorMat3) * glm::translate(glm::mat4(1.0), tVec);
+      view::viewMat = view::viewMat * mirrorMat;
 
-    // Push a reflected view matrix
-    glm::mat4 origViewMat = view::viewMat;
+      // Flip the orientation
+      render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
 
-    glm::vec3 mirrorN = baseUp * sign;
-    glm::mat3 mirrorMat3 = glm::mat3(1.0) - 2.0f * glm::outerProduct(mirrorN, mirrorN);
-    glm::vec3 tVec{0., 0., 0.};
-    tVec[iP] = -groundHeight;
-    glm::mat4 mirrorMat =
-        glm::translate(glm::mat4(1.0), -tVec) * glm::mat4(mirrorMat3) * glm::translate(glm::mat4(1.0), tVec);
-    view::viewMat = view::viewMat * mirrorMat;
-
-    // Flip the orientation
-    render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
-
-    // Draw everything
-    if (!render::engine->transparencyEnabled()) { // skip when transparency is turned on
+      // Draw everything
       drawStructures();
-    }
 
-    // Restore original values
-    render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
-    view::viewMat = origViewMat;
+      // Restore original values
+      render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
+      view::viewMat = origViewMat;
+    }
   }
 
   // Render the scene to implement the shadow effect
   if (!isRedraw && options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
 
-    // Prepare the alternate scene buffers
+    // Prepare the alternate scene buffers sized to the active viewport
+    unsigned int altW = std::max(1, factor * view::getActiveViewportBufferWidth());
+    unsigned int altH = std::max(1, factor * view::getActiveViewportBufferHeight());
+    unsigned int blurW = std::max(1u, altW / 2);
+    unsigned int blurH = std::max(1u, altH / 2);
+
+    // Ensure blur buffers are the right shape (copyTexProgram & blurProgram overwrite every pixel with BlendMode::Disable)
+    for (int i = 0; i < 2; i++) {
+      blurFrameBuffers[i]->resize(blurW, blurH);
+      blurFrameBuffers[i]->setViewport(0, 0, blurW, blurH);
+    }
+
     render::engine->setBlendMode(BlendMode::AlphaOver);
     render::engine->setDepthMode(DepthMode::Less);
-    sceneAltFrameBuffer->resize(factor * view::bufferWidth, factor * view::bufferHeight);
-    sceneAltFrameBuffer->setViewport(0, 0, factor * view::bufferWidth, factor * view::bufferHeight);
+    sceneAltFrameBuffer->resize(altW, altH);
+    sceneAltFrameBuffer->setViewport(0, 0, altW, altH);
 
     sceneAltFrameBuffer->bindForRendering();
     sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
     sceneAltFrameBuffer->clear();
-
-    // Make sure all framebuffers are the right shape
-    for (int i = 0; i < 2; i++) {
-      blurFrameBuffers[i]->resize(factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
-      blurFrameBuffers[i]->setViewport(0, 0, factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
-      blurFrameBuffers[i]->clear();
-    }
-
-    // Render to a texture so we can sample from it on the ground
-    sceneAltFrameBuffer->bindForRendering();
+    switchedFramebuffer = true;
 
     // Push a view matrix which projects on to the ground plane
     glm::mat4 origViewMat = view::viewMat;
@@ -405,10 +420,12 @@ void GroundPlane::draw(bool isRedraw) {
     view::overrideClipPlanes = false;
   }
 
-  render::engine->bindSceneBuffer();
+  if (switchedFramebuffer) {
+    render::engine->bindSceneBuffer();
+    render::engine->applyTransparencySettings();
+  }
 
   // Render the ground plane
-  render::engine->applyTransparencySettings();
   setUniforms();
   if (options::transparencyMode == TransparencyMode::Pretty) {
     groundPlaneProgram->setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());

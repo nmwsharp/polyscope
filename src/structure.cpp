@@ -335,14 +335,8 @@ void Structure::setStructureUniforms(render::ShaderProgram& p) {
       p.setUniform("u_transparency", transparency.get());
     }
 
-    if (p.hasUniform("u_viewportDim")) {
-      glm::vec4 viewport = render::engine->getCurrentViewport();
-      glm::vec2 viewportDim{viewport[2], viewport[3]};
-      p.setUniform("u_viewportDim", viewportDim);
-    }
-
     // Attach the min depth texture, if needed (rebind each draw since sceneDepthMin changes per-viewport)
-    if (render::engine->transparencyEnabled() && p.hasTexture("t_minDepth")) {
+    if (p.hasTexture("t_minDepth")) {
       p.setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
     }
   }
