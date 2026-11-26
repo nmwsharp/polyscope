@@ -19,6 +19,9 @@
 #include "polyscope/volume_grid.h"
 #include "polyscope/volume_mesh.h"
 
+#include <algorithm>
+#include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <set>
 #include <unordered_set>
@@ -876,13 +879,509 @@ void processFile(std::string filename) {
 }
 
 
+// ============================================================
+// ============== Multi-Viewport Visual Test Scenes ===========
+// ============================================================
+
+namespace {
+
+void makeSphereMesh(std::vector<glm::vec3>& verts, std::vector<std::array<size_t, 3>>& faces, glm::vec3 center,
+                    float radius, int nu = 32, int nv = 20) {
+  verts.clear();
+  faces.clear();
+  const float pi = 3.14159265358979323846f;
+  for (int i = 0; i < nv; i++) {
+    float v = 0.05f * pi + 0.9f * pi * static_cast<float>(i) / (nv - 1);
+    for (int j = 0; j < nu; j++) {
+      float u = 2.0f * pi * static_cast<float>(j) / nu;
+      verts.push_back(center + radius * glm::vec3{std::sin(v) * std::cos(u), std::cos(v), std::sin(v) * std::sin(u)});
+    }
+  }
+  for (int i = 0; i < nv - 1; i++) {
+    for (int j = 0; j < nu; j++) {
+      size_t j2 = (j + 1) % nu;
+      size_t v00 = i * nu + j;
+      size_t v01 = i * nu + j2;
+      size_t v10 = (i + 1) * nu + j;
+      size_t v11 = (i + 1) * nu + j2;
+      faces.push_back({v00, v10, v11});
+      faces.push_back({v00, v11, v01});
+    }
+  }
+}
+
+void makeTorusMesh(std::vector<glm::vec3>& verts, std::vector<std::array<size_t, 3>>& faces, glm::vec3 center,
+                   float majorR, float minorR, int nu = 40, int nv = 24) {
+  verts.clear();
+  faces.clear();
+  const float pi = 3.14159265358979323846f;
+  for (int i = 0; i < nu; i++) {
+    float u = 2.0f * pi * static_cast<float>(i) / nu;
+    float cu = std::cos(u), su = std::sin(u);
+    for (int j = 0; j < nv; j++) {
+      float v = 2.0f * pi * static_cast<float>(j) / nv;
+      float r = majorR + minorR * std::cos(v);
+      verts.push_back(center + glm::vec3{r * cu, minorR * std::sin(v), r * su});
+    }
+  }
+  for (int i = 0; i < nu; i++) {
+    size_t i2 = (i + 1) % nu;
+    for (int j = 0; j < nv; j++) {
+      size_t j2 = (j + 1) % nv;
+      size_t v00 = i * nv + j;
+      size_t v01 = i * nv + j2;
+      size_t v10 = i2 * nv + j;
+      size_t v11 = i2 * nv + j2;
+      faces.push_back({v00, v10, v11});
+      faces.push_back({v00, v11, v01});
+    }
+  }
+}
+
+void makeWireframeBox(std::vector<glm::vec3>& nodes, std::vector<std::array<size_t, 2>>& edges, glm::vec3 center,
+                      glm::vec3 halfExtents) {
+  nodes = {
+      center + glm::vec3{-halfExtents.x, -halfExtents.y, -halfExtents.z},
+      center + glm::vec3{+halfExtents.x, -halfExtents.y, -halfExtents.z},
+      center + glm::vec3{+halfExtents.x, +halfExtents.y, -halfExtents.z},
+      center + glm::vec3{-halfExtents.x, +halfExtents.y, -halfExtents.z},
+      center + glm::vec3{-halfExtents.x, -halfExtents.y, +halfExtents.z},
+      center + glm::vec3{+halfExtents.x, -halfExtents.y, +halfExtents.z},
+      center + glm::vec3{+halfExtents.x, +halfExtents.y, +halfExtents.z},
+      center + glm::vec3{-halfExtents.x, +halfExtents.y, +halfExtents.z},
+  };
+  edges = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6}, {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
+}
+
+polyscope::PointCloud* registerDemoCloud(const std::string& name, glm::vec3 center, float radius, size_t nPts = 600) {
+  std::vector<glm::vec3> pts;
+  std::vector<glm::vec3> cols;
+  std::vector<glm::vec3> vecs;
+  pts.reserve(nPts);
+  cols.reserve(nPts);
+  vecs.reserve(nPts);
+  for (size_t i = 0; i < nPts; i++) {
+    float t = static_cast<float>(i) / nPts;
+    float a = 18.0f * t;
+    float y = (t - 0.5f) * 2.0f * radius;
+    float r = std::sqrt(std::max(0.0f, radius * radius - y * y));
+    glm::vec3 dir{r * std::cos(a), y, r * std::sin(a)};
+    pts.push_back(center + dir);
+    cols.push_back({0.5f + 0.5f * std::cos(a), 0.5f + 0.5f * std::sin(a * 0.7f), 1.0f - t});
+    vecs.push_back(0.25f * glm::normalize(dir + glm::vec3{1e-4f, 0.f, 0.f}));
+  }
+  auto* pc = polyscope::registerPointCloud(name, pts);
+  pc->addColorQuantity("helix color", cols)->setEnabled(true);
+  pc->addVectorQuantity("outward vec", vecs);
+  return pc;
+}
+
+static bool demoShowViewportBorders = true;
+static bool demoSlicePlaneEnabled = false;
+static std::string activeDemoSceneName = "";
+
+void syncDemoSlicePlane() {
+  polyscope::removeAllSlicePlanes();
+  if (demoSlicePlaneEnabled) {
+    polyscope::SlicePlane* sp = polyscope::addSceneSlicePlane();
+    sp->setPose(glm::vec3{0.0f, 0.45f, 0.0f}, glm::vec3{0.8f, 0.3f, 0.5f});
+    sp->setDrawPlane(true);
+    sp->setDrawWidget(true);
+  }
+}
+
+void resetDemoScene() {
+  polyscope::removeAllStructures();
+  polyscope::removeAllSlicePlanes();
+  demoSlicePlaneEnabled = false;
+  polyscope::options::groundPlaneHeightMode = polyscope::GroundPlaneHeightMode::Automatic;
+  polyscope::view::setViewportsShareNavigation(false);
+}
+
+// Scene 1: 2x2 non-overlapping grid mixing transparent meshes, opaque cores, curve networks, point clouds, and ground
+// reflections/shadows from 4 distinct cameras.
+void loadViewportScene_2x2TransparentGrid() {
+  resetDemoScene();
+  activeDemoSceneName = "2x2 Transparent Grid";
+
+  polyscope::view::createViewportGrid(2, 2);
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::options::transparencyRenderPasses = 8;
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::TileReflection;
+
+  std::vector<glm::vec3> V;
+  std::vector<std::array<size_t, 3>> F;
+  std::vector<glm::vec3> CN;
+  std::vector<std::array<size_t, 2>> CE;
+
+  // VP 0 & 3: translucent outer sphere + opaque inner core + wireframe cage
+  makeSphereMesh(V, F, {0.f, 0.65f, 0.f}, 0.58f);
+  auto* outerSphere = polyscope::registerSurfaceMesh("outer glass sphere", V, F);
+  outerSphere->setSurfaceColor({0.25f, 0.65f, 0.95f});
+  outerSphere->setTransparency(0.45);
+  outerSphere->setViewportVisibilityAll(false);
+  outerSphere->setViewportVisibility(0, true);
+  outerSphere->setViewportVisibility(3, true);
+
+  makeSphereMesh(V, F, {0.f, 0.65f, 0.f}, 0.28f);
+  auto* innerCore = polyscope::registerSurfaceMesh("opaque inner core", V, F);
+  innerCore->setSurfaceColor({0.95f, 0.35f, 0.15f});
+  innerCore->setViewportVisibilityAll(false);
+  innerCore->setViewportVisibility(0, true);
+  innerCore->setViewportVisibility(3, true);
+
+  makeWireframeBox(CN, CE, {0.f, 0.65f, 0.f}, {0.68f, 0.68f, 0.68f});
+  auto* cage = polyscope::registerCurveNetwork("wireframe cage", CN, CE);
+  cage->setColor({0.18f, 0.18f, 0.22f});
+  cage->setRadius(0.015);
+  cage->setViewportVisibilityAll(false);
+  cage->setViewportVisibility(0, true);
+  cage->setViewportVisibility(3, true);
+
+  // VP 1 & 3: translucent torus + colorful helix point cloud
+  makeTorusMesh(V, F, {0.f, 0.55f, 0.f}, 0.52f, 0.19f);
+  auto* torus = polyscope::registerSurfaceMesh("emerald torus", V, F);
+  torus->setSurfaceColor({0.15f, 0.80f, 0.45f});
+  torus->setTransparency(0.55);
+  torus->setViewportVisibilityAll(false);
+  torus->setViewportVisibility(1, true);
+  torus->setViewportVisibility(3, true);
+
+  auto* cloud = registerDemoCloud("helix cloud", {0.f, 0.65f, 0.f}, 0.72f, 700);
+  cloud->setPointRadius(0.014);
+  cloud->setTransparency(0.75);
+  cloud->setViewportVisibilityAll(false);
+  cloud->setViewportVisibility(1, true);
+  cloud->setViewportVisibility(3, true);
+
+  // VP 2: 3 concentric nested translucent shells (heavy depth peeling test)
+  std::array<std::tuple<float, glm::vec3, float>, 3> shells = {
+      std::make_tuple(0.65f, glm::vec3{0.92f, 0.22f, 0.45f}, 0.32f),
+      std::make_tuple(0.45f, glm::vec3{0.95f, 0.75f, 0.15f}, 0.50f),
+      std::make_tuple(0.24f, glm::vec3{0.20f, 0.30f, 0.90f}, 1.00f),
+  };
+  for (int s = 0; s < 3; s++) {
+    makeSphereMesh(V, F, {0.f, 0.68f, 0.f}, std::get<0>(shells[s]));
+    auto* sm = polyscope::registerSurfaceMesh("nested shell " + std::to_string(s), V, F);
+    sm->setSurfaceColor(std::get<1>(shells[s]));
+    sm->setTransparency(std::get<2>(shells[s]));
+    sm->setViewportVisibilityExclusive(2);
+  }
+
+  // Distinct camera angles per viewport
+  std::array<glm::vec3, 4> camPos = {
+      glm::vec3{1.9f, 1.4f, 1.9f},
+      glm::vec3{-2.0f, 1.6f, 1.7f},
+      glm::vec3{0.0f, 1.2f, 2.5f},
+      glm::vec3{2.4f, 0.55f, 1.6f}, // low grazing angle for prominent ground reflections
+  };
+  for (int i = 0; i < 4; i++) {
+    polyscope::view::activateViewport(i);
+    polyscope::view::lookAt(camPos[i], glm::vec3{0.f, 0.55f, 0.f});
+  }
+  polyscope::view::activateViewport(0);
+}
+
+// Scene 2: Overlapping insets (3 layers: full-window VP 0, bottom-right inset VP 1, and overlapping VP 2 on top of
+// both VP 0 and VP 1). Exercises scissor-clearing of both sceneBuffer (Normal) and sceneBufferFinal (Pretty), plus
+// non-zero viewport origins for ground plane reflections & shadows.
+void loadViewportScene_OverlappingInsets() {
+  resetDemoScene();
+  activeDemoSceneName = "Overlapping Insets (3 Layers)";
+
+  polyscope::view::setNumViewports(3);
+  // VP 0: full window
+  polyscope::view::activateViewport(0);
+  polyscope::view::setActiveViewportRelativeLocation(0.0f, 0.0f);
+  polyscope::view::setActiveViewportRelativeSize(1.0f, 1.0f);
+  // VP 1: lower-right inset
+  polyscope::view::activateViewport(1);
+  polyscope::view::setActiveViewportRelativeLocation(0.64f, 0.56f);
+  polyscope::view::setActiveViewportRelativeSize(0.34f, 0.40f);
+  // VP 2: smaller inset overlapping BOTH VP 0 and VP 1's upper-left corner
+  polyscope::view::activateViewport(2);
+  polyscope::view::setActiveViewportRelativeLocation(0.46f, 0.36f);
+  polyscope::view::setActiveViewportRelativeSize(0.28f, 0.32f);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::options::transparencyRenderPasses = 8;
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::TileReflection;
+
+  std::vector<glm::vec3> V;
+  std::vector<std::array<size_t, 3>> F;
+  std::vector<glm::vec3> CN;
+  std::vector<std::array<size_t, 2>> CE;
+
+  // VP 0 (background full window): big warm coral torus + opaque gold sphere
+  makeTorusMesh(V, F, {0.f, 0.65f, 0.f}, 0.72f, 0.24f);
+  auto* mainTorus = polyscope::registerSurfaceMesh("main coral torus", V, F);
+  mainTorus->setSurfaceColor({0.92f, 0.28f, 0.22f});
+  mainTorus->setTransparency(0.60);
+  mainTorus->setViewportVisibilityExclusive(0);
+
+  makeSphereMesh(V, F, {0.f, 0.65f, 0.f}, 0.35f);
+  auto* mainSphere = polyscope::registerSurfaceMesh("main gold core", V, F);
+  mainSphere->setSurfaceColor({0.95f, 0.75f, 0.20f});
+  mainSphere->setViewportVisibilityExclusive(0);
+
+  // VP 1 (inset 1): translucent emerald sphere + point cloud
+  makeSphereMesh(V, F, {0.f, 0.65f, 0.f}, 0.55f);
+  auto* inset1Sphere = polyscope::registerSurfaceMesh("inset1 emerald shell", V, F);
+  inset1Sphere->setSurfaceColor({0.12f, 0.82f, 0.42f});
+  inset1Sphere->setTransparency(0.50);
+  inset1Sphere->setViewportVisibilityExclusive(1);
+
+  auto* inset1Cloud = registerDemoCloud("inset1 cloud", {0.f, 0.65f, 0.f}, 0.35f, 500);
+  inset1Cloud->setPointRadius(0.018);
+  inset1Cloud->setViewportVisibilityExclusive(1);
+
+  // VP 2 (inset 2 overlapping VP 0 and VP 1): cobalt torus + wireframe cage
+  makeTorusMesh(V, F, {0.f, 0.65f, 0.f}, 0.50f, 0.20f);
+  auto* inset2Torus = polyscope::registerSurfaceMesh("inset2 cobalt torus", V, F);
+  inset2Torus->setSurfaceColor({0.18f, 0.42f, 0.95f});
+  inset2Torus->setTransparency(0.55);
+  inset2Torus->setViewportVisibilityExclusive(2);
+
+  makeWireframeBox(CN, CE, {0.f, 0.65f, 0.f}, {0.62f, 0.45f, 0.62f});
+  auto* inset2Cage = polyscope::registerCurveNetwork("inset2 cage", CN, CE);
+  inset2Cage->setColor({0.95f, 0.60f, 0.10f});
+  inset2Cage->setRadius(0.018);
+  inset2Cage->setViewportVisibilityExclusive(2);
+
+  polyscope::view::activateViewport(0);
+  polyscope::view::lookAt(glm::vec3{1.7f, 1.1f, 2.3f}, glm::vec3{0.f, 0.55f, 0.f});
+  polyscope::view::activateViewport(1);
+  polyscope::view::lookAt(glm::vec3{-1.8f, 1.2f, 1.8f}, glm::vec3{0.f, 0.55f, 0.f});
+  polyscope::view::activateViewport(2);
+  polyscope::view::lookAt(glm::vec3{0.4f, 1.8f, 1.9f}, glm::vec3{0.f, 0.55f, 0.f});
+  polyscope::view::activateViewport(0);
+}
+
+// Scene 3: 3x4 (12-viewport) grid stress test with per-viewport colored transparent meshes + shared point cloud.
+void loadViewportScene_3x4StressGrid() {
+  resetDemoScene();
+  activeDemoSceneName = "3x4 Grid (12 Viewports)";
+
+  polyscope::view::createViewportGrid(4, 3);
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::options::transparencyRenderPasses = 8;
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::TileReflection;
+
+  std::vector<glm::vec3> V;
+  std::vector<std::array<size_t, 3>> F;
+
+  const float pi = 3.14159265358979323846f;
+  for (int i = 0; i < 12; i++) {
+    float hue = static_cast<float>(i) / 12.0f;
+    glm::vec3 col{0.5f + 0.45f * std::cos(2.0f * pi * hue),
+                  0.5f + 0.45f * std::cos(2.0f * pi * (hue + 0.333f)),
+                  0.5f + 0.45f * std::cos(2.0f * pi * (hue + 0.666f))};
+    if (i % 2 == 0) {
+      makeTorusMesh(V, F, {0.f, 0.55f, 0.f}, 0.50f, 0.18f, 32, 18);
+    } else {
+      makeSphereMesh(V, F, {0.f, 0.58f, 0.f}, 0.50f, 24, 16);
+    }
+    auto* m = polyscope::registerSurfaceMesh("vp_" + std::to_string(i) + "_shape", V, F);
+    m->setSurfaceColor(col);
+    m->setTransparency(0.55);
+    m->setViewportVisibilityExclusive(i);
+
+    polyscope::view::activateViewport(i);
+    float ang = 2.0f * pi * static_cast<float>(i) / 12.0f;
+    polyscope::view::lookAt(glm::vec3{2.1f * std::cos(ang), 0.9f + 0.4f * (i % 3), 2.1f * std::sin(ang)},
+                            glm::vec3{0.f, 0.5f, 0.f});
+  }
+
+  // Shared opaque inner sphere + translucent point cloud visible in all 12 viewports
+  makeSphereMesh(V, F, {0.f, 0.55f, 0.f}, 0.22f, 20, 14);
+  auto* core = polyscope::registerSurfaceMesh("shared core", V, F);
+  core->setSurfaceColor({0.95f, 0.95f, 0.95f});
+
+  auto* pc = registerDemoCloud("shared cloud", {0.f, 0.58f, 0.f}, 0.72f, 500);
+  pc->setPointRadius(0.014);
+  pc->setTransparency(0.7);
+
+  polyscope::view::activateViewport(0);
+}
+
+// Scene 4: 2x2 ShadowOnly isolation test under Pretty transparency (VP 1 intentionally empty so any shadow leak is
+// immediately obvious; VP 0/2/3 cast distinct silhouettes from different camera angles).
+void loadViewportScene_ShadowOnlyIsolation() {
+  resetDemoScene();
+  activeDemoSceneName = "2x2 ShadowOnly Isolation";
+
+  polyscope::view::createViewportGrid(2, 2);
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::options::transparencyRenderPasses = 8;
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::ShadowOnly;
+  polyscope::options::groundPlaneHeightMode = polyscope::GroundPlaneHeightMode::Manual;
+  polyscope::options::groundPlaneHeight = 0.0f;
+
+  std::vector<glm::vec3> V;
+  std::vector<std::array<size_t, 3>> F;
+  std::vector<glm::vec3> CN;
+  std::vector<std::array<size_t, 2>> CE;
+
+  // VP 0: floating translucent red torus
+  makeTorusMesh(V, F, {0.f, 0.75f, 0.f}, 0.55f, 0.18f);
+  auto* m0 = polyscope::registerSurfaceMesh("vp0 torus caster", V, F);
+  m0->setSurfaceColor({0.90f, 0.25f, 0.20f});
+  m0->setTransparency(0.6);
+  m0->setViewportVisibilityExclusive(0);
+
+  // VP 1: intentionally empty (should show pure clean background, zero shadow!)
+
+  // VP 2: floating twin blue spheres
+  makeSphereMesh(V, F, {-0.38f, 0.65f, 0.f}, 0.30f);
+  auto* m2a = polyscope::registerSurfaceMesh("vp2 sphere A", V, F);
+  m2a->setSurfaceColor({0.20f, 0.45f, 0.95f});
+  m2a->setTransparency(0.55);
+  m2a->setViewportVisibilityExclusive(2);
+
+  makeSphereMesh(V, F, {0.38f, 0.95f, 0.f}, 0.25f);
+  auto* m2b = polyscope::registerSurfaceMesh("vp2 sphere B", V, F);
+  m2b->setSurfaceColor({0.20f, 0.80f, 0.85f});
+  m2b->setViewportVisibilityExclusive(2);
+
+  // VP 3: tall curve-network tower
+  makeWireframeBox(CN, CE, {0.f, 0.80f, 0.f}, {0.35f, 0.65f, 0.35f});
+  auto* c3 = polyscope::registerCurveNetwork("vp3 tower", CN, CE);
+  c3->setColor({0.25f, 0.72f, 0.35f});
+  c3->setRadius(0.03);
+  c3->setViewportVisibilityExclusive(3);
+
+  std::array<glm::vec3, 4> camPos = {
+      glm::vec3{0.0f, 2.2f, 2.5f},
+      glm::vec3{0.0f, 2.2f, 2.5f},
+      glm::vec3{1.8f, 2.0f, 1.8f},
+      glm::vec3{-2.0f, 1.8f, 2.2f},
+  };
+  for (int i = 0; i < 4; i++) {
+    polyscope::view::activateViewport(i);
+    polyscope::view::lookAt(camPos[i], glm::vec3{0.f, 0.45f, 0.f});
+  }
+  polyscope::view::activateViewport(0);
+}
+
+// Scene 5: Single viewport for quick comparison
+void loadViewportScene_Single() {
+  resetDemoScene();
+  activeDemoSceneName = "Single Viewport";
+
+  polyscope::view::createViewportGrid(1, 1);
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::options::transparencyRenderPasses = 8;
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::TileReflection;
+
+  std::vector<glm::vec3> V;
+  std::vector<std::array<size_t, 3>> F;
+  makeTorusMesh(V, F, {0.f, 0.65f, 0.f}, 0.60f, 0.20f);
+  auto* torus = polyscope::registerSurfaceMesh("demo torus", V, F);
+  torus->setSurfaceColor({0.25f, 0.65f, 0.95f});
+  torus->setTransparency(0.5);
+
+  makeSphereMesh(V, F, {0.f, 0.65f, 0.f}, 0.28f);
+  auto* core = polyscope::registerSurfaceMesh("demo core", V, F);
+  core->setSurfaceColor({0.95f, 0.35f, 0.15f});
+
+  auto* pc = registerDemoCloud("demo cloud", {0.f, 0.65f, 0.f}, 0.85f, 600);
+  pc->setPointRadius(0.015);
+  pc->setTransparency(0.75);
+
+  polyscope::view::lookAt(glm::vec3{2.0f, 1.3f, 2.0f}, glm::vec3{0.f, 0.55f, 0.f});
+}
+
+void drawViewportBorderOverlay() {
+  if (!demoShowViewportBorders) return;
+  ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+  int nVP = polyscope::view::getNumViewports();
+  int activeVP = polyscope::view::getActiveViewportIndex();
+  for (int i = 0; i < nVP; i++) {
+    glm::vec4 r = polyscope::view::getViewportImGuiRect(i);
+    if (r.z <= 0.f || r.w <= 0.f) continue;
+    ImVec2 pMin(r.x + 0.5f, r.y + 0.5f);
+    ImVec2 pMax(r.x + r.z - 0.5f, r.y + r.w - 0.5f);
+    ImU32 borderCol = (i == activeVP) ? IM_COL32(255, 165, 0, 220) : IM_COL32(80, 80, 80, 170);
+    float thickness = (i == activeVP) ? 2.5f : 1.5f;
+    drawList->AddRect(pMin, pMax, borderCol, 0.0f, 0, thickness);
+
+    std::string label = "VP " + std::to_string(i);
+    ImVec2 textPos(r.x + 8.0f, r.y + r.w - 22.0f);
+    drawList->AddRectFilled(ImVec2(textPos.x - 4.0f, textPos.y - 2.0f), ImVec2(textPos.x + 42.0f, textPos.y + 16.0f),
+                            IM_COL32(20, 20, 20, 160), 3.0f);
+    drawList->AddText(textPos, IM_COL32(255, 255, 255, 230), label.c_str());
+  }
+}
+
+} // namespace
+
 void callback() {
   static int numPoints = 2000;
   static float param = 3.14;
   static int loadedMat = 1;
   static bool depthClick = false;
 
+  drawViewportBorderOverlay();
+
   ImGui::PushItemWidth(100 * polyscope::options::uiScale);
+
+  // Quick multi-viewport visual verification controls
+  ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
+  if (ImGui::TreeNode("Viewport Render Demo")) {
+    ImGui::Text("Scene: %s", activeDemoSceneName.empty() ? "(custom)" : activeDemoSceneName.c_str());
+    ImGui::Text("FPS: %.1f (%.2f ms)", ImGui::GetIO().Framerate, 1000.0f / std::max(1e-3f, ImGui::GetIO().Framerate));
+
+    if (ImGui::Button("2x2 Transparent Grid")) loadViewportScene_2x2TransparentGrid();
+    if (ImGui::Button("Overlapping Insets (3 Layers)")) loadViewportScene_OverlappingInsets();
+    if (ImGui::Button("3x4 Grid (12 Viewports)")) loadViewportScene_3x4StressGrid();
+    if (ImGui::Button("2x2 ShadowOnly Isolation")) loadViewportScene_ShadowOnlyIsolation();
+    if (ImGui::Button("Single Viewport")) loadViewportScene_Single();
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Transparency:");
+    if (ImGui::RadioButton("None##t", polyscope::options::transparencyMode == polyscope::TransparencyMode::None))
+      polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Simple##t", polyscope::options::transparencyMode == polyscope::TransparencyMode::Simple))
+      polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Pretty##t", polyscope::options::transparencyMode == polyscope::TransparencyMode::Pretty))
+      polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+
+    ImGui::TextUnformatted("Ground Plane:");
+    if (ImGui::RadioButton("None##g", polyscope::options::groundPlaneMode == polyscope::GroundPlaneMode::None))
+      polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::None;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Tile##g", polyscope::options::groundPlaneMode == polyscope::GroundPlaneMode::Tile))
+      polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::Tile;
+    if (ImGui::RadioButton("TileReflect##g",
+                           polyscope::options::groundPlaneMode == polyscope::GroundPlaneMode::TileReflection))
+      polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::TileReflection;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("ShadowOnly##g",
+                           polyscope::options::groundPlaneMode == polyscope::GroundPlaneMode::ShadowOnly))
+      polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::ShadowOnly;
+
+    ImGui::TextUnformatted("SSAA:");
+    ImGui::SameLine();
+    if (ImGui::RadioButton("1x##ssaa", polyscope::options::ssaaFactor == 1)) polyscope::options::ssaaFactor = 1;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("2x##ssaa", polyscope::options::ssaaFactor == 2)) polyscope::options::ssaaFactor = 2;
+
+    if (ImGui::Checkbox("Slice Plane", &demoSlicePlaneEnabled)) {
+      syncDemoSlicePlane();
+    }
+    ImGui::Checkbox("Show Viewport Borders", &demoShowViewportBorders);
+    ImGui::Checkbox("Always Redraw (FPS test)", &polyscope::options::alwaysRedraw);
+    bool shareNav = polyscope::view::getViewportsShareNavigation();
+    if (ImGui::Checkbox("Share Viewport Navigation", &shareNav)) {
+      polyscope::view::setViewportsShareNavigation(shareNav);
+    }
+
+    ImGui::TreePop();
+  }
+
+  ImGui::Separator();
 
   ImGui::InputInt("num points", &numPoints);
   ImGui::InputFloat("param value", &param);
@@ -983,11 +1482,149 @@ void callback() {
 }
 
 
+void runMultiViewportBenchmark(const std::string& backend, int nFrames, int nWarmup) {
+  polyscope::options::verbosity = 0;
+  polyscope::options::maxFPS = -1;
+  polyscope::options::enableVSync = false;
+  polyscope::options::alwaysRedraw = true;
+  polyscope::options::buildGui = false;
+  polyscope::options::allowHeadlessBackends = true;
+  polyscope::view::windowWidth = 1280;
+  polyscope::view::windowHeight = 720;
+
+  if (backend.empty()) {
+    polyscope::init();
+  } else {
+    polyscope::init(backend);
+  }
+  polyscope::frameTick();
+
+  auto bench = [&](const std::string& label) {
+    for (int i = 0; i < nWarmup; i++) polyscope::frameTick();
+    std::vector<double> times;
+    times.reserve(nFrames);
+    auto tStart = std::chrono::steady_clock::now();
+    for (int i = 0; i < nFrames; i++) {
+      auto t0 = std::chrono::steady_clock::now();
+      polyscope::frameTick();
+      auto t1 = std::chrono::steady_clock::now();
+      times.push_back(std::chrono::duration<double, std::milli>(t1 - t0).count());
+    }
+    double totalSec = std::chrono::duration<double>(std::chrono::steady_clock::now() - tStart).count();
+    std::sort(times.begin(), times.end());
+    double meanMs = totalSec * 1000.0 / nFrames;
+    double medMs = times[times.size() / 2];
+    double fps = nFrames / totalSec;
+    std::cout << std::left << std::setw(54) << label << ": " << std::right << std::fixed << std::setprecision(2)
+              << std::setw(7) << meanMs << " ms mean | " << std::setw(7) << medMs << " ms med  (" << std::setw(7)
+              << std::setprecision(1) << fps << " FPS)\n";
+  };
+
+  std::cout << "Window: " << polyscope::view::windowWidth << "x" << polyscope::view::windowHeight
+            << ", Buffer: " << polyscope::view::bufferWidth << "x" << polyscope::view::bufferHeight << "\n"
+            << std::string(96, '-') << "\n";
+
+  // 1) Empty-scene sweep
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::None;
+  for (auto mode : {polyscope::TransparencyMode::None, polyscope::TransparencyMode::Pretty}) {
+    polyscope::options::transparencyMode = mode;
+    polyscope::options::transparencyRenderPasses = 8;
+    std::string modeName = (mode == polyscope::TransparencyMode::None) ? "none" : "pretty(8)";
+    for (const auto& grid : std::vector<std::pair<int, int>>{{1, 1}, {2, 2}, {4, 3}, {8, 8}}) {
+      int gw = grid.first, gh = grid.second;
+      polyscope::view::createViewportGrid(gw, gh);
+      bench("Empty " + std::to_string(gw) + "x" + std::to_string(gh) + " (" + std::to_string(gw * gh) + " vp), " +
+            modeName + ", ground=none");
+    }
+  }
+  std::cout << std::string(96, '-') << "\n";
+
+  // 2) 6 spheres (4 transparent, 2 opaque) + 1 transparent point cloud
+  std::vector<polyscope::SurfaceMesh*> meshes;
+  std::vector<glm::vec3> V;
+  std::vector<std::array<size_t, 3>> F;
+  const float pi = 3.14159265358979323846f;
+  for (int k = 0; k < 6; k++) {
+    float ang = 2.0f * pi * k / 6.0f;
+    makeSphereMesh(V, F, {0.45f * std::cos(ang), 0.3f, 0.45f * std::sin(ang)}, 0.35f, 24, 16);
+    auto* m = polyscope::registerSurfaceMesh("mesh_" + std::to_string(k), V, F);
+    m->setTransparency(k < 4 ? 0.5 : 1.0);
+    meshes.push_back(m);
+  }
+  auto* cloud = registerDemoCloud("cloud_0", {0.f, 0.5f, 0.f}, 0.8f, 2000);
+  cloud->setTransparency(0.7);
+
+  // 1x1 baseline
+  polyscope::view::createViewportGrid(1, 1);
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::TileReflection;
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+  bench("1x1 (7 structs), none, tile_reflection");
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::options::transparencyRenderPasses = 8;
+  bench("1x1 (7 structs), pretty(8), tile_reflection");
+
+  // 3x4 grid
+  polyscope::view::createViewportGrid(4, 3);
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::TileReflection;
+  bench("3x4 (7 structs), none, tile_reflection");
+
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::ShadowOnly;
+  bench("3x4 (7 structs), none, shadow_only");
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::options::transparencyRenderPasses = 8;
+  for (const auto& gpEntry : std::vector<std::pair<polyscope::GroundPlaneMode, std::string>>{
+           {polyscope::GroundPlaneMode::None, "none"},
+           {polyscope::GroundPlaneMode::Tile, "tile"},
+           {polyscope::GroundPlaneMode::TileReflection, "tile_reflection"},
+           {polyscope::GroundPlaneMode::ShadowOnly, "shadow_only"}}) {
+    polyscope::options::groundPlaneMode = gpEntry.first;
+    bench("3x4 (7 structs), pretty(8), ground=" + gpEntry.second);
+  }
+
+  // 3x4 (1 struct/vp)
+  for (size_t i = 0; i < meshes.size(); i++) meshes[i]->setViewportVisibilityExclusive(static_cast<int>(i));
+  cloud->setViewportVisibilityExclusive(6);
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::TileReflection;
+  bench("3x4 (1 struct/vp), pretty(8), tile_reflection");
+
+  // Overlapping insets (3 layers)
+  for (auto* m : meshes) m->setViewportVisibilityAll(true);
+  cloud->setViewportVisibilityAll(true);
+  polyscope::view::setNumViewports(3);
+  polyscope::view::activateViewport(0);
+  polyscope::view::setActiveViewportRelativeLocation(0.f, 0.f);
+  polyscope::view::setActiveViewportRelativeSize(1.f, 1.f);
+  polyscope::view::activateViewport(1);
+  polyscope::view::setActiveViewportRelativeLocation(0.64f, 0.56f);
+  polyscope::view::setActiveViewportRelativeSize(0.34f, 0.40f);
+  polyscope::view::activateViewport(2);
+  polyscope::view::setActiveViewportRelativeLocation(0.46f, 0.36f);
+  polyscope::view::setActiveViewportRelativeSize(0.28f, 0.32f);
+  polyscope::view::activateViewport(0);
+
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::TileReflection;
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+  bench("Insets (3 layers), none, tile_reflection");
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::options::transparencyRenderPasses = 8;
+  bench("Insets (3 layers), pretty(8), tile_reflection");
+
+  polyscope::shutdown();
+}
+
 int main(int argc, char** argv) {
   // Configure the argument parser
   args::ArgumentParser parser("A simple demo of Polyscope.\nBy "
                               "Nick Sharp (nmwsharp@gmail.com)",
                               "");
+  args::Flag benchFlag(parser, "bench", "Run multi-viewport render benchmark and exit", {"bench"});
+  args::ValueFlag<std::string> benchBackend(parser, "backend", "Backend for --bench (e.g. openGL3_egl, openGL3_glfw)",
+                                            {"bench-backend"}, "");
+  args::ValueFlag<int> benchFrames(parser, "frames", "Timed frames per case for --bench", {"bench-frames"}, 40);
   args::PositionalList<std::string> files(parser, "files", "One or more files to visualize");
 
   // Parse args
@@ -1003,6 +1640,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  if (benchFlag) {
+    runMultiViewportBenchmark(args::get(benchBackend), args::get(benchFrames), 5);
+    return 0;
+  }
+
   // Options
   // polyscope::options::autocenterStructures = true;
   // polyscope::view::windowWidth = 600;
@@ -1015,19 +1657,13 @@ int main(int argc, char** argv) {
   // Initialize polyscope
   polyscope::init();
 
-  for (std::string s : files) {
-    processFile(s);
-  }
-
-  // Create a point cloud
-  for (int j = 0; j < 1; j++) {
-    std::vector<glm::vec3> points;
-    for (size_t i = 0; i < 3000; i++) {
-      points.push_back(
-          glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
+  // Load the default multi-viewport demo scene if no files were passed on the command line
+  if (files) {
+    for (std::string s : files) {
+      processFile(s);
     }
-    polyscope::registerPointCloud("really great points" + std::to_string(j), points);
-    addDataToPointCloud("really great points" + std::to_string(j), points);
+  } else {
+    loadViewportScene_2x2TransparentGrid();
   }
 
   // loadFloatingImageData();
