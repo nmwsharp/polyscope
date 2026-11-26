@@ -461,8 +461,8 @@ TEST_F(PolyscopeTest, ViewportRays) {
   float winH = polyscope::view::windowHeight;
 
   // the center of each viewport has a ray along that viewport's look direction (the active viewport is the default)
-  EXPECT_NEAR(polyscope::view::viewportScreenCoordsToWorldRay(glm::vec2{0.15f * winW, 0.15f * winH}, 1).z, -1.f, 1e-3f);
-  EXPECT_NEAR(polyscope::view::viewportScreenCoordsToWorldRay(glm::vec2{0.5f * winW, 0.5f * winH}).x, -1.f, 1e-3f);
+  EXPECT_NEAR(polyscope::view::screenCoordsToWorldRayViewport(glm::vec2{0.15f * winW, 0.15f * winH}, 1).z, -1.f, 1e-3f);
+  EXPECT_NEAR(polyscope::view::screenCoordsToWorldRayViewport(glm::vec2{0.5f * winW, 0.5f * winH}).x, -1.f, 1e-3f);
 
   // the same with global coordinates
   EXPECT_NEAR(polyscope::view::screenCoordsToWorldRay(glm::vec2{0.85f * winW, 0.85f * winH}).z, -1.f, 1e-3f);
@@ -481,7 +481,7 @@ TEST_F(PolyscopeTest, RayHelpersSingleViewport) {
 
   glm::vec2 outside{-300.f, 900.f};
   EXPECT_EQ(polyscope::view::screenCoordsToWorldRay(outside),
-            polyscope::view::viewportScreenCoordsToWorldRay(outside, 0));
+            polyscope::view::screenCoordsToWorldRayViewport(outside, 0));
   EXPECT_GT(glm::length(polyscope::view::screenCoordsToWorldRay(outside) -
                         polyscope::view::screenCoordsToWorldRay(glm::vec2{0.f, 599.f})),
             1e-2f);
@@ -512,7 +512,7 @@ TEST_F(PolyscopeTest, ViewportPickRouting) {
 
   // global buffer inds route the same way, and a pick can be reproduced from its local coordinates and viewport
   EXPECT_EQ(polyscope::pickAtBufferInds(pick.bufferInds).viewportInd, 1);
-  EXPECT_EQ(polyscope::pickViewportAtBufferInds(pick.viewportBufferInds, pick.viewportInd).bufferInds, pick.bufferInds);
+  EXPECT_EQ(polyscope::pickAtBufferIndsViewport(pick.viewportBufferInds, pick.viewportInd).bufferInds, pick.bufferInds);
 
   // a point outside the inset is in viewport 0, and picking does not change which viewport is active
   EXPECT_EQ(polyscope::pickAtScreenCoords(glm::vec2{0.3f * winW, 0.3f * winH}).viewportInd, 0);
@@ -554,10 +554,10 @@ TEST_F(PolyscopeTest, ViewportPickHitsStructure) {
   EXPECT_EQ(polyscope::pickAtScreenCoords(glm::vec2{0.3f * winW, 0.3f * winH}).structureName, "A");
 
   // asking for viewport 0 at the same point as the inset hits "A", the structure underneath the inset
-  EXPECT_EQ(polyscope::pickViewportAtScreenCoords(insetSc, 0).structureName, "A");
+  EXPECT_EQ(polyscope::pickAtScreenCoordsViewport(insetSc, 0).structureName, "A");
 
   // top-row pick (y=0) must not read out-of-bounds
-  polyscope::PickResult topRowPick = polyscope::pickViewportAtBufferInds(glm::ivec2{10, 0}, 0);
+  polyscope::PickResult topRowPick = polyscope::pickAtBufferIndsViewport(glm::ivec2{10, 0}, 0);
   EXPECT_EQ(topRowPick.structureName, "A");
 
   polyscope::view::createViewportGrid(1, 1); // restore

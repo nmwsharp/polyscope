@@ -19,7 +19,7 @@ PickResult pickAtScreenCoords(glm::vec2 screenCoords) {
   glm::vec2 localScreenCoords;
   int32_t viewportInd;
   std::tie(localScreenCoords, viewportInd) = view::screenCoordsGlobalToViewport(screenCoords);
-  return pickViewportAtScreenCoords(localScreenCoords, viewportInd);
+  return pickAtScreenCoordsViewport(localScreenCoords, viewportInd);
 }
 
 PickResult pickAtBufferInds(glm::ivec2 bufferInds) {
@@ -27,10 +27,10 @@ PickResult pickAtBufferInds(glm::ivec2 bufferInds) {
   glm::ivec2 localBufferInds;
   int32_t viewportInd;
   std::tie(localBufferInds, viewportInd) = view::bufferIndsGlobalToViewport(bufferInds);
-  return pickViewportAtBufferInds(localBufferInds, viewportInd);
+  return pickAtBufferIndsViewport(localBufferInds, viewportInd);
 }
 
-PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t viewportInd) {
+PickResult pickAtScreenCoordsViewport(glm::vec2 screenCoords, int32_t viewportInd) {
   int32_t prevViewport = view::getActiveViewportIndex();
   if (viewportInd < 0) viewportInd = prevViewport;
   if (viewportInd != prevViewport) view::activateViewport(viewportInd);
@@ -40,7 +40,7 @@ PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t viewportIn
   return result;
 }
 
-PickResult pickViewportAtBufferInds(glm::ivec2 bufferInds, int32_t viewportInd) {
+PickResult pickAtBufferIndsViewport(glm::ivec2 bufferInds, int32_t viewportInd) {
   int32_t prevViewport = view::getActiveViewportIndex();
   if (viewportInd < 0) viewportInd = prevViewport;
   if (viewportInd != prevViewport) view::activateViewport(viewportInd);
@@ -75,7 +75,7 @@ static PickResult pickAtActiveViewportBufferInds(glm::ivec2 bufferInds) {
   result.bufferInds = view::bufferIndsViewportToGlobal(bufferInds, result.viewportInd);
   result.screenCoords = view::bufferIndsToScreenCoords(result.bufferInds);
   result.position =
-      view::viewportScreenCoordsAndDepthToWorldPosition(result.viewportScreenCoords, clipDepth, result.viewportInd);
+      view::screenCoordsAndDepthToWorldPositionViewport(result.viewportScreenCoords, clipDepth, result.viewportInd);
   result.depth = glm::length(result.position - view::getCameraWorldPosition());
 
 

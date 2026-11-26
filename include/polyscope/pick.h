@@ -42,8 +42,8 @@ struct PickResult {
   glm::ivec2 bufferInds;
   //
   // The `viewport*` members are LOCAL to the viewport that the pick landed in, which is `viewportInd`: the origin is
-  // the top-left of that viewport. These are the coordinates to use with pickViewportAtScreenCoords() and
-  // pickViewportAtBufferInds(), so that pickViewportAtBufferInds(r.viewportBufferInds, r.viewportInd) round-trips.
+  // the top-left of that viewport. These are the coordinates to use with pickAtScreenCoordsViewport() and
+  // pickAtBufferIndsViewport(), so that pickAtBufferIndsViewport(r.viewportBufferInds, r.viewportInd) round-trips.
   // With a single viewport (viewportInd == 0, covering the whole window), these equal the global values above.
   int32_t viewportInd = 0;
   glm::vec2 viewportScreenCoords;
@@ -63,8 +63,8 @@ PickResult pickAtBufferInds(glm::ivec2 bufferInds);    // takes indices into ren
 
 // Viewport-explicit pick variants: coordinates are LOCAL to the given viewport (origin at viewport top-left).
 // Pass viewportInd=-1 to use the current active viewport.
-PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t viewportInd = -1);
-PickResult pickViewportAtBufferInds(glm::ivec2 bufferInds, int32_t viewportInd = -1);
+PickResult pickAtScreenCoordsViewport(glm::vec2 screenCoords, int32_t viewportInd = -1);
+PickResult pickAtBufferIndsViewport(glm::ivec2 bufferInds, int32_t viewportInd = -1);
 
 // == Stateful picking: track and update a current selection
 

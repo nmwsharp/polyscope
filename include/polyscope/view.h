@@ -185,9 +185,9 @@ glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clip
 //
 // The viewport variants instead take coordinates LOCAL to the viewport viewportInd (the active viewport if -1), and
 // use the camera of that viewport.
-glm::vec3 viewportScreenCoordsToWorldRay(glm::vec2 screenCoords, int32_t viewportInd = -1);
-glm::vec3 viewportBufferIndsToWorldRay(glm::ivec2 bufferInds, int32_t viewportInd = -1);
-glm::vec3 viewportScreenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth,
+glm::vec3 screenCoordsToWorldRayViewport(glm::vec2 screenCoords, int32_t viewportInd = -1);
+glm::vec3 bufferIndsToWorldRayViewport(glm::ivec2 bufferInds, int32_t viewportInd = -1);
+glm::vec3 screenCoordsAndDepthToWorldPositionViewport(glm::vec2 screenCoords, float clipDepth,
                                                       int32_t viewportInd = -1);
 
 // Get and set camera from json string

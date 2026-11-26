@@ -151,8 +151,8 @@ TEST_F(PolyscopeTest, SlicePlaneViewportTest) {
 
   polyscope::view::createViewportGrid(2, 1);
   polyscope::show(3);
-  polyscope::pickViewportAtBufferInds(glm::ivec2(10, 10), 0);
-  polyscope::pickViewportAtBufferInds(glm::ivec2(10, 10), 1);
+  polyscope::pickAtBufferIndsViewport(glm::ivec2(10, 10), 0);
+  polyscope::pickAtBufferIndsViewport(glm::ivec2(10, 10), 1);
   polyscope::view::createViewportGrid(1, 1);
 
   polyscope::removeAllSlicePlanes();

@@ -904,7 +904,7 @@ glm::vec3 getLookVec() {
 // NOTE: There are two flavors of the ray/position helpers below, see the note in view.h:
 //  - the plain versions (like screenCoordsToWorldRay()) take GLOBAL coordinates on the whole window, find the viewport
 //    that contains them, and call the viewport version.
-//  - the viewport versions (like viewportScreenCoordsToWorldRay()) take coordinates LOCAL to a viewport, and use the
+//  - the viewport versions (like screenCoordsToWorldRayViewport()) take coordinates LOCAL to a viewport, and use the
 //    camera of that viewport, which might not be the active one.
 
 namespace {
@@ -944,7 +944,7 @@ glm::vec3 localBufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t viewportIn
 }
 }; // namespace
 
-glm::vec3 viewportScreenCoordsToWorldRay(glm::vec2 screenCoords, int32_t viewportInd) {
+glm::vec3 screenCoordsToWorldRayViewport(glm::vec2 screenCoords, int32_t viewportInd) {
   int32_t prevViewport = getActiveViewportIndex();
   bool switched = (viewportInd >= 0 && viewportInd != prevViewport);
   if (switched) activateViewport(viewportInd);
@@ -966,10 +966,10 @@ glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords) {
   glm::vec2 localScreenCoords;
   int32_t viewportInd;
   std::tie(localScreenCoords, viewportInd) = globalScreenCoordsToLocalUnclamped(screenCoords);
-  return viewportScreenCoordsToWorldRay(localScreenCoords, viewportInd);
+  return screenCoordsToWorldRayViewport(localScreenCoords, viewportInd);
 }
 
-glm::vec3 viewportBufferIndsToWorldRay(glm::ivec2 bufferInds, int32_t viewportInd) {
+glm::vec3 bufferIndsToWorldRayViewport(glm::ivec2 bufferInds, int32_t viewportInd) {
   return localBufferCoordsToWorldRay(glm::vec2(bufferInds), viewportInd);
 }
 
@@ -1000,10 +1000,10 @@ glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clip
   glm::vec2 localScreenCoords;
   int32_t viewportInd;
   std::tie(localScreenCoords, viewportInd) = globalScreenCoordsToLocalUnclamped(screenCoords);
-  return viewportScreenCoordsAndDepthToWorldPosition(localScreenCoords, clipDepth, viewportInd);
+  return screenCoordsAndDepthToWorldPositionViewport(localScreenCoords, clipDepth, viewportInd);
 }
 
-glm::vec3 viewportScreenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth, int32_t viewportInd) {
+glm::vec3 screenCoordsAndDepthToWorldPositionViewport(glm::vec2 screenCoords, float clipDepth, int32_t viewportInd) {
 
   if (clipDepth == 1.) {
     // if we didn't hit anything in the depth buffer, just return infinity
