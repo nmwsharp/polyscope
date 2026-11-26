@@ -320,7 +320,7 @@ TEST_F(PolyscopeTest, ViewportProjectionMode) {
   auto psMesh = registerTriangleMesh();
   auto psCloud = polyscope::registerPointCloud("cloud", std::vector<glm::vec3>{{0, 0, 0}, {1, 0, 0}});
 
-  polyscope::view::createViewportGrid(2, 1); // 2 viewports
+  polyscope::view::createViewportGrid(2, 1);           // 2 viewports
   polyscope::view::setViewportsShareNavigation(false); // allow independent projection modes
 
   // default: all viewports start with same projection mode (Perspective)
@@ -472,15 +472,16 @@ TEST_F(PolyscopeTest, ViewportRays) {
   polyscope::view::createViewportGrid(1, 1); // restore
 }
 
-// With a single viewport, as in all code from before viewports, the plain ray function takes window coordinates and does
-// not clamp them to the window.
+// With a single viewport, as in all code from before viewports, the plain ray function takes window coordinates and
+// does not clamp them to the window.
 TEST_F(PolyscopeTest, RayHelpersSingleViewport) {
   polyscope::view::setWindowSize(800, 600);
   polyscope::view::createViewportGrid(1, 1);
   polyscope::show(3);
 
   glm::vec2 outside{-300.f, 900.f};
-  EXPECT_EQ(polyscope::view::screenCoordsToWorldRay(outside), polyscope::view::viewportScreenCoordsToWorldRay(outside, 0));
+  EXPECT_EQ(polyscope::view::screenCoordsToWorldRay(outside),
+            polyscope::view::viewportScreenCoordsToWorldRay(outside, 0));
   EXPECT_GT(glm::length(polyscope::view::screenCoordsToWorldRay(outside) -
                         polyscope::view::screenCoordsToWorldRay(glm::vec2{0.f, 599.f})),
             1e-2f);

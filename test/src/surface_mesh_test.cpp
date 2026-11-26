@@ -746,15 +746,14 @@ TEST_F(PolyscopeTest, SimpleTriangleMeshUpdateFunctions) {
   polyscope::show(3);
 
   // updateMesh: shrink
-  psMesh->updateMesh(std::vector<glm::vec3>{{0,0,0},{1,0,0},{0,1,0}},
-                     std::vector<glm::uvec3>{{0,1,2}});
+  psMesh->updateMesh(std::vector<glm::vec3>{{0, 0, 0}, {1, 0, 0}, {0, 1, 0}}, std::vector<glm::uvec3>{{0, 1, 2}});
   EXPECT_EQ(psMesh->nVertices(), 3u);
   EXPECT_EQ(psMesh->nFaces(), 1u);
   polyscope::show(3);
 
   // updateMesh: grow beyond original size
-  std::vector<glm::vec3> bigVerts = {{0,0,0},{1,0,0},{0,1,0},{0,0,1},{1,1,0}};
-  std::vector<glm::uvec3> bigFaces = {{0,1,2},{1,3,4},{2,3,0}};
+  std::vector<glm::vec3> bigVerts = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}};
+  std::vector<glm::uvec3> bigFaces = {{0, 1, 2}, {1, 3, 4}, {2, 3, 0}};
   psMesh->updateMesh(bigVerts, bigFaces);
   EXPECT_EQ(psMesh->nVertices(), 5u);
   EXPECT_EQ(psMesh->nFaces(), 3u);
@@ -769,21 +768,21 @@ TEST_F(PolyscopeTest, SimpleTriangleMeshQuantityUpdateAfterResize) {
   // Add quantities at original size and enable them
   auto qVS = psMesh->addVertexScalarQuantity("vScalar", std::vector<float>(psMesh->nVertices(), 1.f));
   auto qFS = psMesh->addFaceScalarQuantity("fScalar", std::vector<float>(psMesh->nFaces(), 2.f));
-  auto qVC = psMesh->addVertexColorQuantity("vColor", std::vector<glm::vec3>(psMesh->nVertices(), glm::vec3{1,0,0}));
-  auto qFC = psMesh->addFaceColorQuantity("fColor", std::vector<glm::vec3>(psMesh->nFaces(), glm::vec3{0,1,0}));
+  auto qVC = psMesh->addVertexColorQuantity("vColor", std::vector<glm::vec3>(psMesh->nVertices(), glm::vec3{1, 0, 0}));
+  auto qFC = psMesh->addFaceColorQuantity("fColor", std::vector<glm::vec3>(psMesh->nFaces(), glm::vec3{0, 1, 0}));
   qVS->setEnabled(true);
   polyscope::show(3);
 
   // Resize the mesh
-  std::vector<glm::vec3> newVerts = {{0,0,0},{1,0,0},{0,1,0},{0,0,1},{1,1,0}};
-  std::vector<glm::uvec3> newFaces = {{0,1,2},{1,3,4},{2,3,0}};
+  std::vector<glm::vec3> newVerts = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}};
+  std::vector<glm::uvec3> newFaces = {{0, 1, 2}, {1, 3, 4}, {2, 3, 0}};
   psMesh->updateMesh(newVerts, newFaces);
 
   // Update all quantities to match new counts
   qVS->updateData(std::vector<float>(psMesh->nVertices(), 3.f));
   qFS->updateData(std::vector<float>(psMesh->nFaces(), 4.f));
-  qVC->updateData(std::vector<glm::vec3>(psMesh->nVertices(), glm::vec3{0,0,1}));
-  qFC->updateData(std::vector<glm::vec3>(psMesh->nFaces(), glm::vec3{1,1,0}));
+  qVC->updateData(std::vector<glm::vec3>(psMesh->nVertices(), glm::vec3{0, 0, 1}));
+  qFC->updateData(std::vector<glm::vec3>(psMesh->nFaces(), glm::vec3{1, 1, 0}));
 
   EXPECT_EQ(qVS->values.size(), psMesh->nVertices());
   EXPECT_EQ(qFS->values.size(), psMesh->nFaces());
@@ -798,8 +797,9 @@ TEST_F(PolyscopeTest, SimpleTriangleMeshQuantityUpdateAfterResize) {
 
 TEST_F(PolyscopeTest, SimpleTriangleMeshLargeFaceQuantities) {
 
-  // This primarily serves to test the GL Texture Buffers and using attributes to set texture buffers within the ManagedBuffer and Engine classes.
-  // Currently, SimpleTriangleMesh face quantities are the only users of this, and there's a fair bit of special-purpose code just to support that.
+  // This primarily serves to test the GL Texture Buffers and using attributes to set texture buffers within the
+  // ManagedBuffer and Engine classes. Currently, SimpleTriangleMesh face quantities are the only users of this, and
+  // there's a fair bit of special-purpose code just to support that.
 
   // Exceeds typical 16k/32k GL_MAX_TEXTURE_SIZE for 1D textures; verifies TBO-backed face quantities
   // render the expected data at high gl_PrimitiveID across initial upload, updateData(), and growth via updateMesh().
