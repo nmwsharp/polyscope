@@ -564,6 +564,9 @@ public:
   virtual void setBlendMode(BlendMode newMode) = 0;
   virtual void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) = 0;
   virtual void setBackfaceCull(bool newVal = false) = 0;
+  virtual void setViewportAndScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
+  virtual void disableScissor();
+  bool isScissorEnabled() const;
 
   void setCurrentViewport(glm::vec4 viewport);
   glm::vec4 getCurrentViewport();
@@ -658,19 +661,13 @@ public:
   // The size of these buffers is always kept in sync with the screen size
   std::shared_ptr<FrameBuffer> displayBuffer, displayBufferAlt;
   std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal; // TODO rename the 'final' one
-  std::vector<std::shared_ptr<FrameBuffer>> sceneBufferTargets;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
-  std::shared_ptr<FrameBuffer> sceneDepthMinFrame; // per-viewport; set by setActiveSceneTarget
-  std::vector<std::shared_ptr<FrameBuffer>> sceneDepthMinFrameTargets;
+  std::shared_ptr<FrameBuffer> sceneDepthMinFrame;
   FrameBuffer& getDisplayBuffer();
 
   // Main buffers for rendering.
-  // sceneColor, sceneDepth, sceneDepthMin, and their corresponding framebuffers are per-viewport;
-  // the active viewport's versions are exposed as the non-vector members, set by setActiveSceneTarget.
-  // sceneColorFinal holds the composited result and remains a single texture.
   std::shared_ptr<TextureBuffer> sceneColorFinal;
   std::shared_ptr<TextureBuffer> sceneColor, sceneDepth, sceneDepthMin;
-  std::vector<std::shared_ptr<TextureBuffer>> sceneColorTargets, sceneDepthTargets, sceneDepthMinTargets;
   std::shared_ptr<RenderBuffer> pickColorBuffer, pickDepthBuffer;
   TextureBuffer& getFinalSceneColorTexture();
 
@@ -689,10 +686,6 @@ public:
   bool slicePlanesEnabled();                     // true if there is at least one slice plane in the scene
   virtual void setFrontFaceCCW(bool newVal) = 0; // true if CCW triangles are considered front-facing; false otherwise
   bool getFrontFaceCCW();
-
-  // A few viewport related helpers
-  void setActiveSceneTarget(int activeSceneTargets);
-  void ensureSceneTargetsAllocated(int sceneTargetsCount);
 
   // == Options
   BackgroundView background = BackgroundView::None;
@@ -756,11 +749,17 @@ protected:
   bool enableFXAA = true;
   glm::vec4 currViewport; // TODO remove global viewport size. There is no reason for this, and stops us from doing
                           // screenshot renders while minimized.
+  bool scissorEnabled = false;
   float currPixelScale;
   TransparencyMode transparencyMode = TransparencyMode::None;
   int slicePlaneCount = 0;
   bool frontFaceCCW = true;
-  std::vector<FrameBuffer*> renderFramebufferStack; // supports push/popBindFramebufferForRendering
+  struct SavedFramebufferState {
+    FrameBuffer* framebuffer;
+    glm::vec4 viewport;
+    bool scissorEnabled;
+  };
+  std::vector<SavedFramebufferState> renderFramebufferStack; // supports push/popBindFramebufferForRendering
 
   // Cached lazy seettings for the resolve and relight program
   int currLightingSampleLevel = -1;

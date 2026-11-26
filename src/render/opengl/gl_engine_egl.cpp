@@ -580,9 +580,12 @@ void GLEngineEGL::hideWindow() {
 }
 
 void GLEngineEGL::updateWindowSize(bool force) {
-  // does nothing
-  // (this function is for updating polyscope's internal window & buffer info in response to the user resizing the
-  // window at the OS level, but in headless mode there is no interactable window for the user to change size of)
+  // In headless mode there is no interactable window for the user to resize,
+  // but force == true is used internally (e.g. when ssaaFactor changes) to resize screen buffers.
+  if (force) {
+    requestRedraw();
+    render::engine->resizeScreenBuffersAndSetViewports();
+  }
 }
 
 

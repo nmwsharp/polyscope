@@ -1740,8 +1740,7 @@ void setNumViewports(int count) {
   state::globalContext.viewportParameters.resize(count);
 
   // Copy the current active view parameters into all new views to initialize them.
-  // Newly added viewports start at zero size until positioned via setActiveViewportRelativeSize()
-  // so allocating many small viewports never transiently allocates full-window buffers for each.
+  // Newly added viewports start at zero size until positioned via setActiveViewportRelativeSize().
   for (int i = oldCount; i < count; i++) {
     packCurrentViewportParametersToIndex(i);
     state::globalContext.viewportParameters[i].viewportRelativePosX = 0.0f;
@@ -1750,15 +1749,14 @@ void setNumViewports(int count) {
     state::globalContext.viewportParameters[i].viewportRelativeHeight = 0.0f;
   }
 
-  // Clamp active index to valid range after shrinking, and unpack BEFORE resizing buffers
+  // Clamp active index to valid range after shrinking, and unpack BEFORE updating viewport dimensions
   // (which packs the active viewport).
   if (activeViewportIndex >= count) {
     activeViewportIndex = count - 1;
     unpackCurrentViewportParametersFromActive();
   }
 
-  render::engine->ensureSceneTargetsAllocated(count);
-  render::engine->setActiveSceneTarget(activeViewportIndex);
+  updateViewportDimensions();
 
   requestRedraw();
 }
@@ -1835,8 +1833,7 @@ void createInitialViewport() {
   state::globalContext.viewportParameters[0].viewportRelativeWidth = 1.0;
   state::globalContext.viewportParameters[0].viewportRelativeHeight = 1.0;
   if (!render::engine) error("Render engine not initialized. You called an internal function at the wrong time.");
-  render::engine->ensureSceneTargetsAllocated(1);
-  render::engine->setActiveSceneTarget(0);
+  updateViewportDimensions();
 }
 
 void clearViewports() {

@@ -239,7 +239,7 @@ void GroundPlane::draw(bool isRedraw) {
 
   // Viewport
   glm::vec4 viewport = render::engine->getCurrentViewport();
-  glm::vec2 viewportDim{viewport[2], viewport[3]};
+  bool hadScissor = render::engine->isScissorEnabled();
   int factor = render::engine->getSSAAFactor();
 
   auto setUniforms = [&]() {
@@ -248,7 +248,7 @@ void GroundPlane::draw(bool isRedraw) {
 
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
     groundPlaneProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
-    groundPlaneProgram->setUniform("u_viewportDim", viewportDim);
+    groundPlaneProgram->setUniform("u_viewport", viewport);
 
     if (options::groundPlaneMode == GroundPlaneMode::Tile ||
         options::groundPlaneMode == GroundPlaneMode::TileReflection) {
@@ -304,6 +304,7 @@ void GroundPlane::draw(bool isRedraw) {
       // Reflections are skipped when transparency is enabled; ensure the mirror texture has alpha == 0
       // once (at 1x1) without re-allocating or re-binding on every viewport/frame.
       if (sceneAltFrameBuffer->getSizeX() != 1 || sceneAltFrameBuffer->getSizeY() != 1) {
+        if (hadScissor) render::engine->disableScissor();
         sceneAltFrameBuffer->resize(1, 1);
         sceneAltFrameBuffer->setViewport(0, 0, 1, 1);
         sceneAltFrameBuffer->clearColor = {0.f, 0.f, 0.f};
@@ -314,6 +315,7 @@ void GroundPlane::draw(bool isRedraw) {
     } else {
       // Prepare the alternate scene buffers sized to the active viewport
       // (use a texture 1/4 the area of the viewport buffer, it's supposed to be blurry anyway and this saves perf)
+      if (hadScissor) render::engine->disableScissor();
       unsigned int altW = std::max(1, factor * view::getActiveViewportBufferWidth() / 2);
       unsigned int altH = std::max(1, factor * view::getActiveViewportBufferHeight() / 2);
       render::engine->setBlendMode(BlendMode::AlphaOver);
@@ -353,6 +355,7 @@ void GroundPlane::draw(bool isRedraw) {
 
   // Render the scene to implement the shadow effect
   if (!isRedraw && options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
+    if (hadScissor) render::engine->disableScissor();
 
     // Prepare the alternate scene buffers sized to the active viewport
     unsigned int altW = std::max(1, factor * view::getActiveViewportBufferWidth());
@@ -422,14 +425,16 @@ void GroundPlane::draw(bool isRedraw) {
 
   if (switchedFramebuffer) {
     render::engine->bindSceneBuffer();
+    if (hadScissor) {
+      render::engine->setViewportAndScissor(static_cast<int>(viewport[0]), static_cast<int>(viewport[1]),
+                                            static_cast<unsigned int>(viewport[2]),
+                                            static_cast<unsigned int>(viewport[3]));
+    }
     render::engine->applyTransparencySettings();
   }
 
   // Render the ground plane
   setUniforms();
-  if (options::transparencyMode == TransparencyMode::Pretty) {
-    groundPlaneProgram->setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
-  }
   groundPlaneProgram->draw();
 }
 

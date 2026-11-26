@@ -270,6 +270,7 @@ R"(
         float coloredBrightness = 1.2 * orenNayarDiffuse(eyeDir, lightDir, normalCameraSpace, .05, 1.0) + .3;
         float whiteBrightness = .25 * specular(normalCameraSpace, lightDir, eyeDir, 12.);
 
+        // TODO: premultiply RGB by u_transparency to match the rest of the scene buffer pipeline (especially Simple transparency's BlendMode::Add)
         vec4 lightColor = vec4(groundColor * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness, u_transparency);
         outputF = lightColor;
       }
