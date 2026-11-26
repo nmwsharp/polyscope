@@ -2538,6 +2538,22 @@ std::vector<unsigned char> GLEngine::readDisplayBuffer() {
 }
 
 
+void GLEngine::setViewportAndScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
+  glViewport(startX, startY, sizeX, sizeY);
+  glEnable(GL_SCISSOR_TEST);
+  glScissor(startX, startY, sizeX, sizeY);
+  Engine::setViewportAndScissor(startX, startY, sizeX, sizeY);
+  checkGLError();
+}
+
+void GLEngine::disableScissor() {
+  if (scissorEnabled) {
+    glDisable(GL_SCISSOR_TEST);
+    Engine::disableScissor();
+    checkGLError();
+  }
+}
+
 void GLEngine::setDepthMode(DepthMode newMode) {
   switch (newMode) {
   case DepthMode::Less:

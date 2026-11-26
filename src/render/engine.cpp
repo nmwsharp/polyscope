@@ -475,6 +475,12 @@ void Engine::setCurrentViewport(glm::vec4 val) { currViewport = val; }
 glm::vec4 Engine::getCurrentViewport() { return currViewport; }
 void Engine::setCurrentPixelScaling(float val) { currPixelScale = val; }
 float Engine::getCurrentPixelScaling() { return currPixelScale; }
+void Engine::setViewportAndScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
+  setCurrentViewport({startX, startY, sizeX, sizeY});
+  scissorEnabled = true;
+}
+void Engine::disableScissor() { scissorEnabled = false; }
+bool Engine::isScissorEnabled() const { return scissorEnabled; }
 
 void Engine::bindDisplay() {
   FrameBuffer& targetBuffer = getDisplayBuffer();
@@ -496,77 +502,20 @@ void Engine::resizeScreenBuffersAndSetViewports() {
   unsigned int height = view::bufferHeight;
   displayBuffer->resize(width, height);
   displayBufferAlt->resize(width, height);
+  sceneBuffer->resize(ssaaFactor * width, ssaaFactor * height);
   sceneBufferFinal->resize(ssaaFactor * width, ssaaFactor * height);
+  sceneDepthMinFrame->resize(ssaaFactor * width, ssaaFactor * height);
 
   displayBuffer->setViewport(0, 0, width, height);
   displayBufferAlt->setViewport(0, 0, width, height);
+  sceneBuffer->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
   sceneBufferFinal->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
-
-  for (size_t i = 0; i < sceneBufferTargets.size(); i++) {
-    view::ViewParameters vp = view::getViewportParameters(i);
-
-    sceneBufferTargets[i]->resize(ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
-    sceneDepthMinFrameTargets[i]->resize(ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
-
-    sceneBufferTargets[i]->setViewport(0, 0, ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
-    sceneDepthMinFrameTargets[i]->setViewport(0, 0, ssaaFactor * vp.viewportBufferWidth,
-                                              ssaaFactor * vp.viewportBufferHeight);
-  }
+  sceneDepthMinFrame->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
 }
 
 bool Engine::bindSceneBuffer() {
   setCurrentPixelScaling(ssaaFactor * options::uiScale);
   return sceneBuffer->bindForRendering();
-}
-
-void Engine::setActiveSceneTarget(int i) {
-  if (i >= (int)sceneBufferTargets.size()) exception("invalid scene target index");
-  sceneBuffer = sceneBufferTargets[i];
-  sceneColor = sceneColorTargets[i];
-  sceneDepth = sceneDepthTargets[i];
-  sceneDepthMin = sceneDepthMinTargets[i];
-  sceneDepthMinFrame = sceneDepthMinFrameTargets[i];
-}
-
-void Engine::ensureSceneTargetsAllocated(int count) {
-  int currentCount = (int)sceneColorTargets.size();
-  if (currentCount == count) return;
-
-  sceneColorTargets.resize(count);
-  sceneDepthTargets.resize(count);
-  sceneBufferTargets.resize(count);
-  sceneDepthMinTargets.resize(count);
-  sceneDepthMinFrameTargets.resize(count);
-
-  // initialize any new targets/buffers
-  for (int i = currentCount; i < count; i++) {
-
-    // we always initialize at the arbitray size of 128x128, then resize below to avoid duplicating logic
-    unsigned int w = 128;
-    unsigned int h = 128;
-
-    std::shared_ptr<TextureBuffer> color = generateTextureBuffer(TextureFormat::RGBA16F, w, h);
-    std::shared_ptr<TextureBuffer> depth = generateTextureBuffer(TextureFormat::DEPTH24, w, h);
-    std::shared_ptr<FrameBuffer> fb = generateFrameBuffer(w, h);
-    fb->addColorBuffer(color);
-    fb->addDepthBuffer(depth);
-    fb->setDrawBuffers();
-    fb->clearColor = glm::vec3{1., 1., 1.};
-    fb->clearAlpha = 0.0;
-
-    std::shared_ptr<TextureBuffer> depthMin = generateTextureBuffer(TextureFormat::DEPTH24, w, h);
-    std::shared_ptr<FrameBuffer> depthMinFrame = generateFrameBuffer(w, h);
-    depthMinFrame->addDepthBuffer(depthMin);
-    depthMinFrame->clearDepth = 0.0;
-
-    sceneColorTargets[i] = color;
-    sceneDepthTargets[i] = depth;
-    sceneBufferTargets[i] = fb;
-    sceneDepthMinTargets[i] = depthMin;
-    sceneDepthMinFrameTargets[i] = depthMinFrame;
-  }
-
-  resizeScreenBuffersAndSetViewports();
 }
 
 void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
@@ -742,6 +691,27 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
   // Note: The display frame buffer should be manually wrapped by child classes
 
+  { // Scene buffer
+    sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    sceneDepth = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
+
+    sceneBuffer = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
+    sceneBuffer->addColorBuffer(sceneColor);
+    sceneBuffer->addDepthBuffer(sceneDepth);
+    sceneBuffer->setDrawBuffers();
+
+    sceneBuffer->clearColor = glm::vec3{0., 0., 0.};
+    sceneBuffer->clearAlpha = 0.0;
+  }
+
+  { // Scene min depth buffer (for depth peeling transparency)
+    sceneDepthMin = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
+
+    sceneDepthMinFrame = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
+    sceneDepthMinFrame->addDepthBuffer(sceneDepthMin);
+    sceneDepthMinFrame->clearDepth = 0.0;
+  }
+
   { // "Final" scene buffer (after resolving)
     sceneColorFinal = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
 
@@ -822,15 +792,22 @@ uint64_t Engine::getNextUniqueID() {
 
 void Engine::pushBindFramebufferForRendering(FrameBuffer& f) {
   if (currRenderFramebuffer == nullptr) exception("tried to push current framebuff on to stack, but it is null");
-  renderFramebufferStack.push_back(currRenderFramebuffer);
+  renderFramebufferStack.push_back({currRenderFramebuffer, currViewport, scissorEnabled});
+  disableScissor();
   f.bindForRendering();
 }
 
 void Engine::popBindFramebufferForRendering() {
   if (renderFramebufferStack.empty())
     exception("called popBindFramebufferForRendering() on empty stack. Forgot to push?");
-  renderFramebufferStack.back()->bindForRendering();
+  SavedFramebufferState prev = renderFramebufferStack.back();
   renderFramebufferStack.pop_back();
+  disableScissor();
+  prev.framebuffer->bindForRendering();
+  if (prev.scissorEnabled) {
+    setViewportAndScissor(static_cast<int>(prev.viewport[0]), static_cast<int>(prev.viewport[1]),
+                          static_cast<unsigned int>(prev.viewport[2]), static_cast<unsigned int>(prev.viewport[3]));
+  }
 }
 
 void Engine::addSlicePlane(std::string uniquePostfix) {
@@ -946,18 +923,13 @@ void Engine::freeAllOwnedResources() {
   displayBuffer.reset();
   displayBufferAlt.reset();
   sceneBuffer.reset();
-  sceneBufferTargets.clear();
   sceneBufferFinal.reset();
   pickFramebuffer.reset();
   sceneDepthMinFrame.reset();
-  sceneDepthMinFrameTargets.clear();
   sceneColor.reset();
   sceneColorFinal.reset();
   sceneDepth.reset();
   sceneDepthMin.reset();
-  sceneColorTargets.clear();
-  sceneDepthTargets.clear();
-  sceneDepthMinTargets.clear();
   pickColorBuffer.reset();
   pickDepthBuffer.reset();
   renderTexturePlain.reset();

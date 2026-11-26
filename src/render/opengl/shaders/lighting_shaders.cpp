@@ -222,6 +222,9 @@ const ShaderReplacementRule INVERSE_TONEMAP (
 );
 
 
+// TODO: dividing by sampleVal.w un-premultiplies sampleVal.xyz when sampleVal.w < 1, but MAP_LIGHT treats the result
+// as premultiplied (`color + (1. - alpha) * u_bgColor`), blowing out low-alpha regions. Dividing by max(sampleVal.w, 1.)
+// instead preserves premultiplied alpha.
 const ShaderReplacementRule TRANSPARENCY_RESOLVE_SIMPLE (
     /* rule name */ "TRANSPARENCY_RESOLVE_SIMPLE ",
     { /* replacement sources */

@@ -79,6 +79,9 @@ void TransformationGizmo::draw() {
   ImGuizmo::SetOrthographic(view::getProjectionMode() == ProjectionMode::Orthographic);
 
   // draw/process the actual widget
+  // TODO: when dragging the camera view around, if the mouse passes over the gizmo the view drag stops for a frame
+  // (ImGuizmo reacts to an already-held mouse drag / captures mouse); camera drags started outside the gizmo should
+  // ignore it. (Also note: `bool lastInteractResult` below shadows the member variable read in interact().)
   bool lastInteractResult = ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
                                                  gizmoOpMode, gizmoCoordSpace, glm::value_ptr(Tref));
 

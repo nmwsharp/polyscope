@@ -58,7 +58,7 @@ const ShaderStageSpecification GROUND_PLANE_TILE_FRAG_SHADER= {
       {"u_center", RenderDataType::Vector3Float},
       {"u_basisX", RenderDataType::Vector3Float},
       {"u_basisY", RenderDataType::Vector3Float},
-      {"u_viewportDim", RenderDataType::Vector2Float},
+      {"u_viewport", RenderDataType::Vector4Float},
       {"u_cameraHeight", RenderDataType::Float},
       {"u_groundHeight", RenderDataType::Float},
       {"u_upSign", RenderDataType::Float}
@@ -83,7 +83,7 @@ R"(
       uniform vec3 u_center;
       uniform vec3 u_basisX;
       uniform vec3 u_basisY;
-      uniform vec2 u_viewportDim;
+      uniform vec4 u_viewport;
       uniform float u_cameraHeight;
       uniform float u_groundHeight;
       uniform float u_upSign;
@@ -111,7 +111,7 @@ R"(
         vec4 groundColor = mix( vec4(baseColor.xyz * .2, 1.0), baseColor, stripeBlendFac);
 
         // Ground color
-        vec3 color3 = groundColor.rgb + 0. * u_viewportDim.x; // silly usage to avoid optimizing out
+        vec3 color3 = groundColor.rgb + 0. * u_viewport.x; // silly usage to avoid optimizing out
 
         // Lighting stuff
         vec4 posCameraSpace4 = u_viewMatrix * PositionWorldHomog;
@@ -154,7 +154,7 @@ const ShaderStageSpecification GROUND_PLANE_TILE_REFLECT_FRAG_SHADER = {
       {"u_center", RenderDataType::Vector3Float},
       {"u_basisX", RenderDataType::Vector3Float},
       {"u_basisY", RenderDataType::Vector3Float},
-      {"u_viewportDim", RenderDataType::Vector2Float},
+      {"u_viewport", RenderDataType::Vector4Float},
       {"u_cameraHeight", RenderDataType::Float},
       {"u_groundHeight", RenderDataType::Float},
       {"u_upSign", RenderDataType::Float}
@@ -181,7 +181,7 @@ R"(
       uniform vec3 u_center;
       uniform vec3 u_basisX;
       uniform vec3 u_basisY;
-      uniform vec2 u_viewportDim;
+      uniform vec4 u_viewport;
       uniform float u_cameraHeight;
       uniform float u_groundHeight;
       uniform float u_upSign;
@@ -194,8 +194,8 @@ R"(
       float specular( vec3 N, vec3 L, vec3 E, float shininess );
 
       vec4 sampleMirror() {
-        vec2 screenCoords = vec2(gl_FragCoord.x, gl_FragCoord.y);
-        vec4 mirrorImage = texture(t_mirrorImage, screenCoords / u_viewportDim) ;
+        vec2 screenCoords = (gl_FragCoord.xy - u_viewport.xy) / u_viewport.zw;
+        vec4 mirrorImage = texture(t_mirrorImage, screenCoords);
         return mirrorImage;
       }
 
@@ -260,7 +260,7 @@ const ShaderStageSpecification GROUND_PLANE_SHADOW_FRAG_SHADER = {
 
     { // uniforms
       {"u_lengthScale", RenderDataType::Float},
-      {"u_viewportDim", RenderDataType::Vector2Float},
+      {"u_viewport", RenderDataType::Vector4Float},
       {"u_shadowDarkness", RenderDataType::Float},
       {"u_cameraHeight", RenderDataType::Float},
       {"u_groundHeight", RenderDataType::Float},
@@ -282,7 +282,7 @@ R"(
 
       uniform sampler2D t_shadow;
       uniform mat4 u_viewMatrix;
-      uniform vec2 u_viewportDim;
+      uniform vec4 u_viewport;
       uniform float u_lengthScale;
       uniform float u_shadowDarkness;
       uniform float u_cameraHeight;
@@ -298,7 +298,7 @@ R"(
         float depth = gl_FragCoord.z;
         ${ GLOBAL_FRAGMENT_FILTER }$
 
-        vec2 screenCoords = vec2(gl_FragCoord.x / u_viewportDim.x, gl_FragCoord.y / u_viewportDim.y);
+        vec2 screenCoords = (gl_FragCoord.xy - u_viewport.xy) / u_viewport.zw;
         float shadowVal = texture(t_shadow, screenCoords).r;
         shadowVal = pow(clamp(shadowVal, 0., 1.), 0.25);
 
