@@ -53,8 +53,8 @@ struct ViewParameters {
 
   // Computed viewport geometry derived from the relative values above.
   // See note in view.h for the distinction of bufferIndices vs screenCoords.
-  int viewportPosX;         // top-left corner of the viewport in buffer inds (integer pixel inds)
-  int viewportPosY;         // (y=0 at the top, like buffer inds everywhere else. OpenGL calls flip this as needed)
+  int viewportPosX;           // top-left corner of the viewport in buffer inds (integer pixel inds)
+  int viewportPosY;           // (y=0 at the top, like buffer inds everywhere else. OpenGL calls flip this as needed)
   int viewportBufferWidth;    // viewport dimensions in buffer inds (integer buffer pixels)
   int viewportBufferHeight;   // viewport dimensions in buffer inds (integer buffer pixels)
   float viewportWindowWidth;  // viewport dimensions in screenCoords (floats, as in ImGui etc)

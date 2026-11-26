@@ -108,8 +108,7 @@ void GLEngineGLFW::initialize() {
 
   {
     std::stringstream ss;
-    ss << "Backend: openGL3_glfw -- "
-       << "Loaded openGL version: " << glGetString(GL_VERSION);
+    ss << "Backend: openGL3_glfw -- " << "Loaded openGL version: " << glGetString(GL_VERSION);
     info(0, ss.str());
   }
 

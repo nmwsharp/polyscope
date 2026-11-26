@@ -423,7 +423,7 @@ void drawStructures() {
 
   for (auto& catMap : state::structures) {
     for (auto& s : catMap.second) {
-      if(!s.second->getViewportVisibility()) continue;
+      if (!s.second->getViewportVisibility()) continue;
 
       s.second->draw();
     }
@@ -440,7 +440,7 @@ void drawStructuresDelayed() {
   // drawn
   for (auto& catMap : state::structures) {
     for (auto& s : catMap.second) {
-      if(!s.second->getViewportVisibility()) continue;
+      if (!s.second->getViewportVisibility()) continue;
 
       s.second->drawDelayed();
     }

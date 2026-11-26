@@ -254,8 +254,7 @@ void GLEngineEGL::initialize() {
 
   {
     std::stringstream ss;
-    ss << "Backend: openGL3_egl -- "
-       << "Loaded openGL version: " << glGetString(GL_VERSION) << " -- "
+    ss << "Backend: openGL3_egl -- " << "Loaded openGL version: " << glGetString(GL_VERSION) << " -- "
        << "EGL version: " << majorVer << "." << minorVer;
     info(0, ss.str());
   }

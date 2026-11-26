@@ -227,7 +227,8 @@ glm::ivec2 screenCoordsToBufferIndsVec(glm::vec2 screenCoords); // screen → bu
 std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
 
 // The same conversions as above, but both the inputs and outputs are in the LOCAL frame of the given viewport.
-// Pass viewportInd=-1 to use the current active viewport. (Local buffer indices are clamped to lie inside the viewport.)
+// Pass viewportInd=-1 to use the current active viewport. (Local buffer indices are clamped to lie inside the
+// viewport.)
 glm::vec2 bufferIndsToScreenCoordsViewport(int xPos, int yPos, int32_t viewportInd = -1);
 glm::vec2 bufferIndsToScreenCoordsViewport(glm::ivec2 bufferInds, int32_t viewportInd = -1);
 glm::ivec2 screenCoordsToBufferIndsVecViewport(glm::vec2 screenCoords, int32_t viewportInd = -1);

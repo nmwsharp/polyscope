@@ -19,8 +19,9 @@ namespace polyscope {
 
 // Forward declarations for ManagedBuffer integration
 namespace render {
-  class ManagedBufferBase;
-  template <typename T> class ManagedBuffer;
+class ManagedBufferBase;
+template <typename T>
+class ManagedBuffer;
 } // namespace render
 
 // == A few enums that control behavior
@@ -262,7 +263,7 @@ class RenderBuffer {
 public:
   // abstract class: use the factory methods from the Engine class
   RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_);
-  virtual ~RenderBuffer() {};
+  virtual ~RenderBuffer(){};
 
   virtual void resize(unsigned int newX, unsigned int newY);
 
@@ -283,7 +284,7 @@ class FrameBuffer {
 public:
   // abstract class: use the factory methods from the Engine class
   FrameBuffer();
-  virtual ~FrameBuffer() {};
+  virtual ~FrameBuffer(){};
 
   virtual void bind() = 0;
   // Bind to this framebuffer so subsequent draw calls will go to it
@@ -402,7 +403,7 @@ class ShaderProgram {
 
 public:
   ShaderProgram(DrawMode dm);
-  virtual ~ShaderProgram() {};
+  virtual ~ShaderProgram(){};
 
 
   // === Store data
@@ -455,23 +456,30 @@ public:
                             bool withAlpha = true, bool useMipMap = false, bool repeat = false) = 0;
   virtual void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) = 0;
   // TODO make this one take a shared pointer and have the same semantics as the attribute version
-  virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source = nullptr) = 0;
-  // Bind an AttributeBuffer (VBO) as a buffer texture (samplerBuffer / GL_TEXTURE_BUFFER, ShaderTextureType::TextureBuffer).
-  // Note: the buffer is always exposed to shaders as a flattened 1-component scalar stream (GL_R32F / GL_R32I / GL_R32UI),
-  // even for vector/matrix types (e.g., fetch a vec3 at index i via texelFetch at 3*i + {0, 1, 2}). This is done because
-  // OpenGL 3.3 core does not support 3-component buffer texture formats (GL_RGB32F requires GL 4.0).
+  virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer,
+                                    ManagedBufferBase* source = nullptr) = 0;
+  // Bind an AttributeBuffer (VBO) as a buffer texture (samplerBuffer / GL_TEXTURE_BUFFER,
+  // ShaderTextureType::TextureBuffer). Note: the buffer is always exposed to shaders as a flattened 1-component scalar
+  // stream (GL_R32F / GL_R32I / GL_R32UI), even for vector/matrix types (e.g., fetch a vec3 at index i via texelFetch
+  // at 3*i + {0, 1, 2}). This is done because OpenGL 3.3 core does not support 3-component buffer texture formats
+  // (GL_RGB32F requires GL 4.0).
   virtual void setTextureFromAttributeBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer,
                                              ManagedBufferBase* source = nullptr) = 0;
 
 
   // Convenience overloads for ManagedBuffer — set the buffer AND record the source for lazy sync.
   // Defined in managed_buffer.h after ManagedBuffer<T> is fully declared.
-  template <typename T> void setAttribute(std::string name, ManagedBuffer<T>& buf);
+  template <typename T>
+  void setAttribute(std::string name, ManagedBuffer<T>& buf);
   // Binds a texture-backed ManagedBuffer (DeviceBufferType::Texture1d/2d/3d) to a sampler1D/2D/3D.
-  template <typename T> void setTextureFromBuffer(std::string name, ManagedBuffer<T>& buf);
-  // Binds an attribute-backed ManagedBuffer (DeviceBufferType::Attribute) as a buffer texture (samplerBuffer / TextureBuffer).
-  template <typename T> void setTextureFromAttributeBuffer(std::string name, ManagedBuffer<T>& buf);
-  template <typename T> void setIndex(ManagedBuffer<T>& buf);
+  template <typename T>
+  void setTextureFromBuffer(std::string name, ManagedBuffer<T>& buf);
+  // Binds an attribute-backed ManagedBuffer (DeviceBufferType::Attribute) as a buffer texture (samplerBuffer /
+  // TextureBuffer).
+  template <typename T>
+  void setTextureFromAttributeBuffer(std::string name, ManagedBuffer<T>& buf);
+  template <typename T>
+  void setIndex(ManagedBuffer<T>& buf);
 
   // Indices
   virtual void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) = 0;
@@ -652,7 +660,7 @@ public:
   std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal; // TODO rename the 'final' one
   std::vector<std::shared_ptr<FrameBuffer>> sceneBufferTargets;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
-  std::shared_ptr<FrameBuffer> sceneDepthMinFrame;             // per-viewport; set by setActiveSceneTarget
+  std::shared_ptr<FrameBuffer> sceneDepthMinFrame; // per-viewport; set by setActiveSceneTarget
   std::vector<std::shared_ptr<FrameBuffer>> sceneDepthMinFrameTargets;
   FrameBuffer& getDisplayBuffer();
 
@@ -681,7 +689,7 @@ public:
   bool slicePlanesEnabled();                     // true if there is at least one slice plane in the scene
   virtual void setFrontFaceCCW(bool newVal) = 0; // true if CCW triangles are considered front-facing; false otherwise
   bool getFrontFaceCCW();
-  
+
   // A few viewport related helpers
   void setActiveSceneTarget(int activeSceneTargets);
   void ensureSceneTargetsAllocated(int sceneTargetsCount);

@@ -381,7 +381,8 @@ void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
   } else if (haveNodeRadiusQuantity) {
     // have just node
     CurveNetworkNodeScalarQuantity& nodeRadQ = resolveNodeRadiusQuantity();
-    program.setAttribute("a_tailRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTailInds), &nodeRadQ.values);
+    program.setAttribute("a_tailRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTailInds),
+                         &nodeRadQ.values);
     program.setAttribute("a_tipRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTipInds), &nodeRadQ.values);
   }
 }

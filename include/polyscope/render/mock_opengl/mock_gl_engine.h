@@ -244,7 +244,8 @@ struct GLShaderAttribute {
   RenderDataType type;
   int arrayCount;
   std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
-  ManagedBufferBase* sourceManagedBuffer; // might be empty if not from a managed buffer. for indexed views, it's the original data source
+  ManagedBufferBase* sourceManagedBuffer;  // might be empty if not from a managed buffer. for indexed views, it's the
+                                           // original data source
 };
 
 struct GLShaderTexture {
@@ -252,9 +253,11 @@ struct GLShaderTexture {
   ShaderTextureType type;
   uint32_t index;
   bool isSet;
-  GLTextureBuffer* textureBuffer; // NOTE: very confusing name, unrelated to the OpenGL "TextureBuffer" concept as used below
+  GLTextureBuffer*
+      textureBuffer; // NOTE: very confusing name, unrelated to the OpenGL "TextureBuffer" concept as used below
   std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
-  ManagedBufferBase* sourceManagedBuffer; // might be empty if not from a managed buffer. for indexed views, it's the original data source
+  ManagedBufferBase* sourceManagedBuffer; // might be empty if not from a managed buffer. for indexed views, it's the
+                                          // original data source
 
   // used only for ShaderTextureType::TextureBuffer
   std::shared_ptr<GLAttributeBuffer> attrBuffer;
@@ -347,7 +350,8 @@ public:
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
   void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) override;
-  void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source = nullptr) override;
+  void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer,
+                            ManagedBufferBase* source = nullptr) override;
   void setTextureFromAttributeBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer,
                                      ManagedBufferBase* source = nullptr) override;
 

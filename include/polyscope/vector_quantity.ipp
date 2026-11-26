@@ -241,8 +241,7 @@ TangentVectorQuantity<QuantityT>::TangentVectorQuantity(QuantityT& quantity_,
       tangentVectors(&quantity_, quantity_.uniquePrefix() + "#values", std::vector<glm::vec2>(tangentVectors_)),
       tangentBasisX(&quantity_, quantity_.uniquePrefix() + "#basisX", std::vector<glm::vec3>(tangentBasisX_)),
       tangentBasisY(&quantity_, quantity_.uniquePrefix() + "#basisY", std::vector<glm::vec3>(tangentBasisY_)),
-      vectorRoots(vectorRoots_),
-      nSym(nSym_) {
+      vectorRoots(vectorRoots_), nSym(nSym_) {
   tangentVectors.checkInvalidValues();
   tangentBasisX.checkInvalidValues();
   tangentBasisY.checkInvalidValues();

@@ -115,9 +115,9 @@ glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds) {
   return bufferIndsToScreenCoords(bufferInds.x, bufferInds.y);
 }
 
-// NOTE: All of the helpers here follow the conventions in the big note in view.h: screen coords and buffer inds both have
-// y=0 at the TOP, and differ only by the DPI scale factor. "Global" coordinates have their origin at the top-left of the
-// whole window, "local" (viewport) coordinates have their origin at the top-left of a particular viewport.
+// NOTE: All of the helpers here follow the conventions in the big note in view.h: screen coords and buffer inds both
+// have y=0 at the TOP, and differ only by the DPI scale factor. "Global" coordinates have their origin at the top-left
+// of the whole window, "local" (viewport) coordinates have their origin at the top-left of a particular viewport.
 
 namespace {
 // The top-left corner of a viewport, in global buffer inds (y-from-top)
@@ -818,7 +818,6 @@ void setProjectionMode(ProjectionMode newMode) {
   propagateViewUpdatesToViewports();
   requestRedraw();
 }
-
 
 
 ViewRelativeMode getViewRelativeMode() { return viewRelativeMode; }
@@ -1813,7 +1812,8 @@ void createViewportGrid(int gridWidth, int gridHeight) {
     for (int j = 0; j < gridWidth; j++) {
       int ind = i * gridWidth + j;
       ViewParameters& vp = state::globalContext.viewportParameters[ind];
-      // note: this intentionally puts the first grid viewport in the upper-left, matching convention from other software
+      // note: this intentionally puts the first grid viewport in the upper-left, matching convention from other
+      // software
       vp.viewportRelativePosX = static_cast<float>(j) / gridWidth;
       vp.viewportRelativePosY = static_cast<float>(i) / gridHeight;
       vp.viewportRelativeWidth = cellW;
@@ -1846,8 +1846,9 @@ void clearViewports() {
 
 void validateViewports() {
   if (getNumViewports() == 0)
-    error("No viewports of the scene exist. Either viewports were configured wrong, program flow has been called in the "
-          "wrong order.");
+    error(
+        "No viewports of the scene exist. Either viewports were configured wrong, program flow has been called in the "
+        "wrong order.");
 }
 
 void updateViewportDimensions() {

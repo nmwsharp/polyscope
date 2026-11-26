@@ -83,8 +83,8 @@ namespace pick {
 // that 0 is the first index as returned from requestPickBufferRange())
 //
 // When using multiple viewports, the coordinates are LOCAL to the viewport iView, where iView<0 means the active
-// viewport, as with other viewport-aware functions. With a single viewport, these all behave as they always did. To pick
-// using global window coordinates and have the viewport found automatically, use the functions above.
+// viewport, as with other viewport-aware functions. With a single viewport, these all behave as they always did. To
+// pick using global window coordinates and have the viewport found automatically, use the functions above.
 std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords,
                                                    int32_t iView = -1); // takes screen coordinates
 std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos,

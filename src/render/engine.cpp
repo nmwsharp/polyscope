@@ -508,7 +508,8 @@ void Engine::resizeScreenBuffersAndSetViewports() {
     sceneDepthMinFrameTargets[i]->resize(ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
 
     sceneBufferTargets[i]->setViewport(0, 0, ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
-    sceneDepthMinFrameTargets[i]->setViewport(0, 0, ssaaFactor * vp.viewportBufferWidth, ssaaFactor * vp.viewportBufferHeight);
+    sceneDepthMinFrameTargets[i]->setViewport(0, 0, ssaaFactor * vp.viewportBufferWidth,
+                                              ssaaFactor * vp.viewportBufferHeight);
   }
 }
 

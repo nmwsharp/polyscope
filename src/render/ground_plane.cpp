@@ -62,7 +62,7 @@ void GroundPlane::populateGroundPlaneGeometry() {
   // clang-format on
 
   groundPlaneProgram->setAttribute("a_position", positions);
-  groundPlaneProgram->setDrawCount(4*3);
+  groundPlaneProgram->setDrawCount(4 * 3);
   groundPlaneViewCached = view::upDir;
 }
 

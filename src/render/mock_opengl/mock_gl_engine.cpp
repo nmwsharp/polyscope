@@ -412,7 +412,9 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int 
   checkGLError();
 }
 
-void GLTextureBuffer::setData(const std::vector<glm::vec2>& data, size_t offset, size_t count) { exception("not implemented"); }
+void GLTextureBuffer::setData(const std::vector<glm::vec2>& data, size_t offset, size_t count) {
+  exception("not implemented");
+}
 
 
 void GLTextureBuffer::setData(const std::vector<glm::vec3>& data, size_t offset, size_t count) {
@@ -508,17 +510,39 @@ void GLTextureBuffer::setData(const std::vector<double>& data, size_t offset, si
 
   checkGLError();
 };
-void GLTextureBuffer::setData(const std::vector<int32_t>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::ivec2>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::ivec3>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::ivec4>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<uint32_t>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::uvec3>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::uvec4>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data, size_t offset, size_t count) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<int32_t>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::ivec2>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::ivec3>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::ivec4>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<uint32_t>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::uvec3>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<glm::uvec4>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data, size_t offset, size_t count) {
+  exception("not implemented");
+};
 
 void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 
@@ -800,7 +824,8 @@ void GLCompiledProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
       return;
     }
   }
-  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, nullptr, nullptr});
+  attributes.push_back(
+      GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, nullptr, nullptr});
 }
 
 void GLCompiledProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
@@ -821,8 +846,7 @@ void GLCompiledProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
     if (t.name == newTexture.name) {
 
       // if it occurs twice, confirm that the occurences match
-      if (t.type != newTexture.type)
-        exception("texture " + t.name + " appears twice in program with different types");
+      if (t.type != newTexture.type) exception("texture " + t.name + " appears twice in program with different types");
 
       return;
     }
@@ -859,7 +883,8 @@ void GLShaderProgram::createBuffers() {
   }
 }
 
-void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer, ManagedBufferBase* source) {
+void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer,
+                                   ManagedBufferBase* source) {
   bindVAO();
   checkGLError();
 
@@ -1495,7 +1520,8 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
                        (bufDim == 3 && t.type == ShaderTextureType::Texture3D);
     if (!typeMatches) {
       throw std::invalid_argument("Tried to use texture " + name + " with mismatched type " +
-                                  shaderTextureTypeName(t.type) + " for " + std::to_string(bufDim) + "D texture buffer");
+                                  shaderTextureTypeName(t.type) + " for " + std::to_string(bufDim) +
+                                  "D texture buffer");
     }
 
     t.textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBuffer);
@@ -1674,8 +1700,9 @@ void GLShaderProgram::validateData() {
     for (GLShaderAttribute a : attributes) {
       int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
       if (a.buff->getBufferSize() / static_cast<uint64_t>(compatCount) < static_cast<uint64_t>(drawCount))
-        throw std::invalid_argument("Attribute " + a.name + " buffer has fewer entries (" + std::to_string(a.buff->getBufferSize()) +
-                                    ") than drawCount (" + std::to_string(drawCount) + ") [size ratio is " + std::to_string(compatCount) + "]");
+        throw std::invalid_argument(
+            "Attribute " + a.name + " buffer has fewer entries (" + std::to_string(a.buff->getBufferSize()) +
+            ") than drawCount (" + std::to_string(drawCount) + ") [size ratio is " + std::to_string(compatCount) + "]");
     }
   }
 
@@ -1907,7 +1934,7 @@ void MockGLEngine::updateWindowSize(bool force) {
       newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
     // Basically a resize callback
     requestRedraw();
-    
+
     // prevent any division by zero for e.g. aspect ratio calcs
     if (newBufferHeight == 0) newBufferHeight = 1;
     if (newWindowHeight == 0) newWindowHeight = 1;

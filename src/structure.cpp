@@ -26,7 +26,7 @@ Structure::Structure(std::string name_, std::string subtypeName_)
   validateName(name);
 }
 
-Structure::~Structure() {};
+Structure::~Structure(){};
 
 Structure* Structure::setEnabled(bool newEnabled) {
   if (newEnabled == isEnabled()) return this;
