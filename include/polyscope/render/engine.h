@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -529,6 +530,18 @@ protected:
 };
 
 
+struct SceneDrawCallbacks {
+  std::function<void()> drawStructures;
+  std::function<void()> drawStructuresDelayed;
+  std::function<void()> drawSlicePlanes;
+};
+
+struct PickBufferSample {
+  std::array<float, 4> color{0.f, 0.f, 0.f, 0.f};
+  float clipDepth = 1.0f;
+  bool valid = false;
+};
+
 class Engine {
 
 public:
@@ -551,13 +564,11 @@ public:
   void popBindFramebufferForRendering(); // pop the old framebuffer off the stack and bind to it
   virtual std::vector<unsigned char> readDisplayBuffer() = 0;
 
-  virtual void clearSceneBuffer();
-  virtual bool bindSceneBuffer();
+  void setUseAltDisplayBuffer(bool newVal); // if true, push final render results offscreen to the alt buffer instead
+  std::vector<unsigned char> readAltDisplayBuffer();
+
   virtual void resizeScreenBuffersAndSetViewports(); // applies to all buffers tied to display size
-  virtual void
-  applyLightingTransform(std::shared_ptr<TextureBuffer>& texture); // tonemap and gamma correct, render to active buffer
-  void updateMinDepthTexture();
-  void renderBackground(); // respects background setting
+  void renderBackground();                           // respects background setting
 
   // Manage render state
   virtual void setDepthMode(DepthMode newMode) = 0;
@@ -586,7 +597,21 @@ public:
   std::vector<std::string> addMaterialRules(std::string materialName, std::vector<std::string> initRules);
   void setMaterialUniforms(ShaderProgram& program, const std::string& mat);
 
-  // === Scene data and niceties
+  // === Scene rendering pipeline
+  void renderScene(const SceneDrawCallbacks& callbacks);
+  void renderSceneToDisplay();
+  void renderDebugPickToDisplay(const std::function<void()>& drawPickFn);
+
+  // Render pick geometry for the active viewport and read back color + clip-space depth at local buffer coords.
+  // Passing xPos == -1 or yPos == -1 renders the pick buffer without reading back a pixel.
+  PickBufferSample renderAndReadPick(int xPos, int yPos, const std::function<void()>& drawPickFn);
+
+  void showDebugTexturesInImGui();
+
+  bool bindSceneBuffer();
+  TextureBuffer& getFinalSceneColorTexture();
+  TextureBuffer* getSceneDepthMinTexture();
+
   GroundPlane groundPlane;
 
   // === Windowing and framework things
@@ -658,24 +683,14 @@ public:
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) = 0;
 
-  // === The frame buffers used in the rendering pipeline
+  // === Display frame buffers (managed by the backend / engine)
   // The size of these buffers is always kept in sync with the screen size
   std::shared_ptr<FrameBuffer> displayBuffer, displayBufferAlt;
-  std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal; // TODO rename the 'final' one
-  std::shared_ptr<FrameBuffer> pickFramebuffer;
-  std::shared_ptr<FrameBuffer> sceneDepthMinFrame;
   FrameBuffer& getDisplayBuffer();
-
-  // Main buffers for rendering.
-  std::shared_ptr<TextureBuffer> sceneColorFinal;
-  std::shared_ptr<TextureBuffer> sceneColor, sceneDepth, sceneDepthMin;
-  std::shared_ptr<RenderBuffer> pickColorBuffer, pickDepthBuffer;
-  TextureBuffer& getFinalSceneColorTexture();
 
   // General-use programs used by the engine
   // TODO some of these seem to be unused; remove them
   std::shared_ptr<ShaderProgram> renderTexturePlain, renderTextureDot3, renderTextureMap3, renderTextureSphereBG;
-  std::shared_ptr<ShaderProgram> compositePeel, mapLight, copyDepth;
 
   // Manage transparency and culling
   void setTransparencyMode(TransparencyMode newMode);
@@ -723,12 +738,6 @@ public:
 
   uint64_t getNextUniqueID();
 
-  // ==  Implementation details and hacks
-  bool lightCopy = false; // if true, when applying lighting transform does a copy instead of an alpha blend. Used
-                          // internally for alpha in screenshots, but should generally be left as false.
-
-  bool useAltDisplayBuffer = false; // if true, push final render results offscreen to the alt buffer instead
-
   // Internal windowing and engine details
   FrameBuffer* currRenderFramebuffer = nullptr;
 
@@ -766,10 +775,26 @@ protected:
     bool scissorEnabled;
   };
   std::vector<SavedFramebufferState> renderFramebufferStack; // supports push/popBindFramebufferForRendering
+  bool useAltDisplayBuffer = false;
 
-  // Cached lazy seettings for the resolve and relight program
+  // Scene & pick pipeline framebuffers, attachments, and resolve programs
+  std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal;
+  std::shared_ptr<FrameBuffer> sceneDepthMinFrame;
+  std::shared_ptr<FrameBuffer> pickFramebuffer;
+
+  std::shared_ptr<TextureBuffer> sceneColor, sceneDepth, sceneDepthMin, sceneColorFinal;
+  std::shared_ptr<RenderBuffer> pickColorBuffer, pickDepthBuffer;
+
+  std::shared_ptr<ShaderProgram> compositePeel, mapLight, copyDepth;
+
+  // Cached lazy settings for the resolve and relight program
   int currLightingSampleLevel = -1;
   TransparencyMode currLightingTransparencyMode = TransparencyMode::None;
+
+  // Internal pipeline pass helpers
+  void updateMinDepthTexture();
+  void applyLightingTransform(std::shared_ptr<TextureBuffer>& texture);
+  bool renderPickInActiveViewport(int viewportW, int viewportH, const std::function<void()>& drawPickFn);
 
   // ImGui/fonts
   bool imguiInitialized = false;

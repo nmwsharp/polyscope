@@ -166,7 +166,7 @@ void GroundPlane::prepare() {
 
   // Respect global effects
   if (options::transparencyMode == TransparencyMode::Pretty) {
-    groundPlaneProgram->setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
+    groundPlaneProgram->setTextureFromBuffer("t_minDepth", render::engine->getSceneDepthMinTexture());
   }
 
   groundPlanePrepared = true;
@@ -187,7 +187,7 @@ void GroundPlane::freeAllOwnedResources() {
   }
 }
 
-void GroundPlane::draw(bool isRedraw) {
+void GroundPlane::draw(const std::function<void()>& drawStructuresFn, bool isRedraw) {
   if (options::groundPlaneMode == GroundPlaneMode::None) {
     return;
   }
@@ -359,7 +359,7 @@ void GroundPlane::draw(bool isRedraw) {
         render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
 
         // Draw everything
-        drawStructures();
+        drawStructuresFn();
 
         // Restore original values
         render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
@@ -422,7 +422,7 @@ void GroundPlane::draw(bool isRedraw) {
       render::engine->setDepthMode(DepthMode::Less);
       render::engine->setBlendMode(BlendMode::Disable);
       render::engine->setPeelEnabled(false);
-      drawStructures();
+      drawStructuresFn();
       render::engine->setPeelEnabled(true);
 
       // Copy the depth buffer to a texture (while downsampling into the active blur subregion)

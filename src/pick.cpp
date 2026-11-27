@@ -53,17 +53,16 @@ static PickResult pickAtActiveViewportBufferInds(glm::ivec2 bufferInds) {
   // bufferInds are local to the active viewport
   PickResult result;
 
-  // Query the pick buffer
-  // (this necessarily renders to pickFrameBuffer)
-  std::tuple<Structure*, Quantity*, uint64_t> rawPickResult = pick::evaluatePickQueryFull(bufferInds.x, bufferInds.y);
+  // Render pick buffer and query both color (encoded index) and clip-space depth
+  render::PickBufferSample sample =
+      render::engine->renderAndReadPick(bufferInds.x, bufferInds.y, drawStructuresPick);
 
-  // Query the depth buffer populated above
-  render::FrameBuffer* pickFramebuffer = render::engine->pickFramebuffer.get();
-  int viewportW = view::getActiveViewportBufferWidth();
-  int viewportH = view::getActiveViewportBufferHeight();
+  std::tuple<Structure*, Quantity*, uint64_t> rawPickResult{nullptr, nullptr, 0};
   float clipDepth = 1.0f;
-  if (bufferInds.x >= 0 && bufferInds.x < viewportW && bufferInds.y >= 0 && bufferInds.y < viewportH) {
-    clipDepth = pickFramebuffer->readDepth(bufferInds.x, viewportH - 1 - bufferInds.y);
+  if (sample.valid) {
+    uint64_t globalInd = pick::vecToInd(glm::vec3{sample.color[0], sample.color[1], sample.color[2]});
+    rawPickResult = pick::globalIndexToLocal(globalInd);
+    clipDepth = sample.clipDepth;
   }
 
   // Transcribe result into return tuple
@@ -281,49 +280,12 @@ std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos, int 
 static std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFullInActiveViewport(int xPos, int yPos) {
 
   // NOTE: hack used for debugging: if xPos == yPos == -1 we do a pick render but do not query the value.
-
-  int viewportW = view::getActiveViewportBufferWidth();
-  int viewportH = view::getActiveViewportBufferHeight();
-
-  // Be sure not to pick outside of buffer
-  if (xPos < -1 || xPos >= viewportW || yPos < -1 || yPos >= viewportH) {
+  render::PickBufferSample sample = render::engine->renderAndReadPick(xPos, yPos, drawStructuresPick);
+  if (!sample.valid) {
     return {nullptr, nullptr, 0};
   }
 
-  render::FrameBuffer* pickFramebuffer = render::engine->pickFramebuffer.get();
-
-  render::engine->setDepthMode(DepthMode::Less);
-  render::engine->setBlendMode(BlendMode::Disable);
-
-  pickFramebuffer->resize(viewportW, viewportH);
-  pickFramebuffer->setViewport(0, 0, viewportW, viewportH);
-  pickFramebuffer->clearColor = glm::vec3{0., 0., 0.};
-  if (!pickFramebuffer->bindForRendering()) return {nullptr, nullptr, 0};
-  pickFramebuffer->clear();
-
-  // Render pick buffer
-  for (auto& cat : state::structures) {
-    for (auto& s : cat.second) {
-      if (!s.second->getViewportVisibility()) continue;
-      s.second->drawPick();
-    }
-  }
-  for (auto& catMap : state::structures) {
-    for (auto& s : catMap.second) {
-      if (!s.second->getViewportVisibility()) continue;
-      s.second->drawPickDelayed();
-    }
-  }
-
-
-  if (xPos == -1 || yPos == -1) {
-    return {nullptr, nullptr, 0};
-  }
-
-  // Read from the pick buffer
-  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, viewportH - 1 - yPos);
-  uint64_t globalInd = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
-
+  uint64_t globalInd = pick::vecToInd(glm::vec3{sample.color[0], sample.color[1], sample.color[2]});
   return pick::globalIndexToLocal(globalInd);
 }
 

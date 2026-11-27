@@ -447,6 +447,21 @@ void drawStructuresDelayed() {
   }
 }
 
+void drawStructuresPick() {
+  for (auto& catMap : state::structures) {
+    for (auto& s : catMap.second) {
+      if (!s.second->getViewportVisibility()) continue;
+      s.second->drawPick();
+    }
+  }
+  for (auto& catMap : state::structures) {
+    for (auto& s : catMap.second) {
+      if (!s.second->getViewportVisibility()) continue;
+      s.second->drawPickDelayed();
+    }
+  }
+}
+
 namespace {
 
 float dragDistSinceLastRelease = 0.0;
@@ -642,265 +657,19 @@ void renderSlicePlanes() {
   }
 }
 
-bool viewportsOverlap(const view::ViewParameters& a, const view::ViewParameters& b) {
-  if (a.viewportBufferWidth <= 0 || a.viewportBufferHeight <= 0 || b.viewportBufferWidth <= 0 ||
-      b.viewportBufferHeight <= 0) {
-    return false;
-  }
-  return a.viewportPosX < b.viewportPosX + b.viewportBufferWidth &&
-         b.viewportPosX < a.viewportPosX + a.viewportBufferWidth &&
-         a.viewportPosY < b.viewportPosY + b.viewportBufferHeight &&
-         b.viewportPosY < a.viewportPosY + a.viewportBufferHeight;
-}
-
-bool viewportOverlapsEarlier(int viewportInd) {
-  const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-  for (int i = 0; i < viewportInd; i++) {
-    if (viewportsOverlap(vp, view::getViewportParameters(i))) return true;
-  }
-  return false;
-}
-
 void renderScene() {
-
-  render::engine->applyTransparencySettings();
-
-  if (!options::renderScene) return;
-
-  int numViewports = view::getNumViewports();
-  if (numViewports == 0) {
-    error("there are no viewports");
-  }
-
-  // We internally change the active viewport to render; save it here so we can restore at the end
-  int savedActiveViewport = view::getActiveViewportIndex();
-  int ssaa = render::engine->getSSAAFactor();
-
-  // Helper to set viewport + scissor on the currently bound full-window buffer for a given viewport.
-  // Returns false if the viewport has zero area and should be skipped.
-  auto setViewportScissor = [&](const view::ViewParameters& vp) -> bool {
-    if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) return false;
-    // (viewportPosY is y-from-top like everywhere else, but OpenGL has y=0 at the bottom, so flip it)
-    int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
-    render::engine->setViewportAndScissor(ssaa * vp.viewportPosX, ssaa * viewportPosYFromBottom,
-                                          ssaa * vp.viewportBufferWidth, ssaa * vp.viewportBufferHeight);
-    return true;
-  };
-
-  if (render::engine->getTransparencyMode() == TransparencyMode::Pretty) {
-    // Special depth peeling case: multiple render passes.
-    // We render into the single full-window sceneBuffer using glViewport + glScissor, and composite each peel pass
-    // into sceneBufferFinal in one fullscreen draw. Non-overlapping viewports are batched into the same layer so
-    // each depth-peeling pass shares a single clear / composite / min-depth update across the whole layer.
-    // (ShadowOnly caches one shared shadow texture across passes via isRedraw, so don't batch multiple viewports
-    // into the same layer in that mode.)
-    bool canBatchLayer = (options::groundPlaneMode != GroundPlaneMode::ShadowOnly);
-    std::vector<std::vector<int>> layers;
-    for (int viewportInd = 0; viewportInd < numViewports; viewportInd++) {
-      const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-      bool fitsInCurrentLayer = canBatchLayer && !layers.empty();
-      if (fitsInCurrentLayer) {
-        for (int existingInd : layers.back()) {
-          if (viewportsOverlap(vp, view::getViewportParameters(existingInd))) {
-            fitsInCurrentLayer = false;
-            break;
-          }
-        }
-      }
-      if (!fitsInCurrentLayer) {
-        layers.emplace_back();
-      }
-      layers.back().push_back(viewportInd);
-    }
-
-    // Clear the final buffer explicitly since we will gradually composite in to it rather than just blitting directly
-    // as in normal rendering.
-    render::engine->disableScissor();
-    render::engine->sceneBufferFinal->clearColor = glm::vec3{0., 0., 0.};
-    render::engine->sceneBufferFinal->clearAlpha = 0;
-    render::engine->sceneBufferFinal->clear();
-
-    render::engine->sceneBuffer->clearColor = glm::vec3{0., 0., 0.};
-    render::engine->sceneBuffer->clearAlpha = 0.;
-
-    for (size_t iLayer = 0; iLayer < layers.size(); iLayer++) {
-      const std::vector<int>& layer = layers[iLayer];
-
-      // Compute the bounding box of this layer's viewports (in top-down buffer coordinates) so that per-pass
-      // clear, compositePeel, and updateMinDepthTexture only touch this layer's pixels. Keeping glViewport
-      // full-window while scissoring preserves 1:1 UV sampling in fullscreen-quad shaders and avoids full-screen
-      // tile traffic when layers cannot be batched (e.g. overlapping insets or ShadowOnly).
-      int minX = view::bufferWidth, minY = view::bufferHeight;
-      int maxX = 0, maxY = 0;
-      for (int viewportInd : layer) {
-        const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-        if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) continue;
-        minX = std::min(minX, vp.viewportPosX);
-        minY = std::min(minY, vp.viewportPosY);
-        maxX = std::max(maxX, vp.viewportPosX + vp.viewportBufferWidth);
-        maxY = std::max(maxY, vp.viewportPosY + vp.viewportBufferHeight);
-      }
-      minX = std::max(0, minX);
-      minY = std::max(0, minY);
-      maxX = std::min(static_cast<int>(view::bufferWidth), maxX);
-      maxY = std::min(static_cast<int>(view::bufferHeight), maxY);
-      if (minX >= maxX || minY >= maxY) {
-        for (int viewportInd : layer) {
-          view::activateViewport(viewportInd);
-          view::ensureViewValid();
-          view::updateFlight();
-        }
-        continue;
-      }
-
-      int layerX = ssaa * minX;
-      int layerYFromBottom = ssaa * (view::bufferHeight - maxY);
-      unsigned int layerW = static_cast<unsigned int>(ssaa * (maxX - minX));
-      unsigned int layerH = static_cast<unsigned int>(ssaa * (maxY - minY));
-      auto scissorToLayerBounds = [&]() { render::engine->setScissor(layerX, layerYFromBottom, layerW, layerH); };
-
-      // For any viewport in a later layer that overlaps an earlier viewport, clear its region in sceneBufferFinal
-      // so the foreground inset renders cleanly on top rather than being occluded by earlier viewports under AlphaUnder.
-      if (iLayer > 0) {
-        bool boundFinal = false;
-        for (int viewportInd : layer) {
-          if (!viewportOverlapsEarlier(viewportInd)) continue;
-          const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-          if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) continue;
-          if (!boundFinal) {
-            if (!render::engine->sceneBufferFinal->bindForRendering()) break;
-            boundFinal = true;
-          }
-          if (setViewportScissor(vp)) {
-            render::engine->sceneBufferFinal->clear();
-          }
-        }
-        render::engine->disableScissor();
-      }
-
-      render::engine->setDepthMode(DepthMode::Less); // we need depth to be enabled for the clear below to do anything
-      if (!render::engine->sceneDepthMinFrame->bindForRendering()) continue;
-      scissorToLayerBounds();
-      render::engine->sceneDepthMinFrame->clear();
-
-      for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
-        bool isRedraw = iPass > 0;
-        internal::renderPassIsRedraw = isRedraw;
-
-        if (!render::engine->bindSceneBuffer()) {
-          // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
-          break;
-        }
-        render::engine->setDepthMode(DepthMode::Less);
-        scissorToLayerBounds();
-        render::engine->clearSceneBuffer();
-
-        for (int viewportInd : layer) {
-          view::activateViewport(viewportInd);
-          if (!isRedraw) {
-            view::ensureViewValid();
-            view::updateFlight();
-          }
-          const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-          if (!setViewportScissor(vp)) continue;
-
-          render::engine->applyTransparencySettings();
-          drawStructures();
-
-          // Draw ground plane, slicers, etc
-          render::engine->groundPlane.draw(isRedraw);
-          if (!isRedraw) {
-            // Only on first pass (kinda weird, but works out, and doesn't really matter)
-            renderSlicePlanes();
-          }
-
-          render::engine->applyTransparencySettings();
-          drawStructuresDelayed();
-        }
-
-        // Composite the result of this pass in to the result buffer (full-window glViewport with layer-bounds
-        // scissor; gaps inside the layer bounds are (0, 0, 0, 0) in sceneColor, which is a no-op under AlphaUnder).
-        render::engine->sceneBufferFinal->bindForRendering();
-        scissorToLayerBounds();
-        render::engine->setDepthMode(DepthMode::Disable);
-        render::engine->setBlendMode(BlendMode::AlphaUnder);
-        render::engine->compositePeel->setTextureFromBuffer("t_image", render::engine->sceneColor.get());
-        render::engine->compositePeel->draw();
-
-        // Update the minimum depth texture (also scissored to the layer bounds)
-        render::engine->updateMinDepthTexture();
-      }
-
-      render::engine->disableScissor();
-      internal::renderPassIsRedraw = false; // reset to usual value
-    }
-
-  } else {
-    // Normal case: single render pass into the full-window sceneBuffer, then one blit to sceneBufferFinal.
-
-    internal::renderPassIsRedraw = false;
-
-    render::engine->disableScissor();
-    if (render::engine->bindSceneBuffer()) {
-      render::engine->setDepthMode(DepthMode::Less); // ensure depth mask is enabled for full depth clear
-      render::engine->sceneBuffer->clearColor = {0., 0., 0.};
-      render::engine->sceneBuffer->clearAlpha = 0.;
-      render::engine->sceneBuffer->clear();
-
-      for (int viewportInd = 0; viewportInd < numViewports; viewportInd++) {
-        view::activateViewport(viewportInd);
-        view::ensureViewValid();
-        view::updateFlight();
-
-        const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-        if (!setViewportScissor(vp)) continue;
-
-        // If this viewport overlaps any earlier viewport, clear only its scissored region so it renders cleanly on top.
-        if (viewportOverlapsEarlier(viewportInd)) {
-          render::engine->setDepthMode(DepthMode::Less);
-          render::engine->sceneBuffer->clear();
-        }
-
-        render::engine->applyTransparencySettings();
-        drawStructures();
-
-        render::engine->groundPlane.draw();
-        renderSlicePlanes();
-
-        render::engine->applyTransparencySettings();
-        drawStructuresDelayed();
-      }
-
-      render::engine->disableScissor();
-      render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), 0, 0);
-    }
-  }
-
-  render::engine->disableScissor();
-
-  // restore the active viewport as it was before the render call
-  view::activateViewport(savedActiveViewport);
+  render::SceneDrawCallbacks callbacks;
+  callbacks.drawStructures = drawStructures;
+  callbacks.drawStructuresDelayed = drawStructuresDelayed;
+  callbacks.drawSlicePlanes = renderSlicePlanes;
+  render::engine->renderScene(callbacks);
 }
 
 void renderSceneToScreen() {
-  render::engine->bindDisplay();
   if (options::debugDrawPickBuffer) {
-    // special debug draw: render and blit each viewport's pick buffer into its region of displayBuffer
-    render::engine->displayBuffer->clearColor = {0., 0., 0.};
-    render::engine->displayBuffer->clearAlpha = 1.;
-    render::engine->displayBuffer->clear();
-    int savedActiveViewport = view::getActiveViewportIndex();
-    for (int viewportInd = 0; viewportInd < view::getNumViewports(); viewportInd++) {
-      view::activateViewport(viewportInd);
-      pick::evaluatePickQuery(-1, -1); // populate the buffer for this viewport
-      view::ViewParameters vp = view::getViewportParameters(viewportInd);
-      int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
-      render::engine->pickFramebuffer->blitTo(render::engine->displayBuffer.get(), vp.viewportPosX,
-                                              viewportPosYFromBottom);
-    }
-    view::activateViewport(savedActiveViewport);
+    render::engine->renderDebugPickToDisplay(drawStructuresPick);
   } else {
-    render::engine->applyLightingTransform(render::engine->sceneColorFinal);
+    render::engine->renderSceneToDisplay();
   }
 }
 
@@ -1107,8 +876,7 @@ void buildPolyscopeGui() {
     static bool showDebugTextures = false;
     ImGui::Checkbox("Show debug textures", &showDebugTextures);
     if (showDebugTextures) {
-      render::engine->showTextureInImGuiWindow("Scene Buffer", render::engine->sceneColor.get());
-      render::engine->showTextureInImGuiWindow("Scene Final", render::engine->sceneColorFinal.get());
+      render::engine->showDebugTexturesInImGui();
     }
     ImGui::TreePop();
   }

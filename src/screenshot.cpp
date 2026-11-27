@@ -46,8 +46,7 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
     return std::vector<unsigned char>();
   }
 
-  render::engine->useAltDisplayBuffer = true;
-  if (options.transparentBackground) render::engine->lightCopy = true; // copy directly in to buffer without blending
+  render::engine->setUseAltDisplayBuffer(true);
 
   // == Make sure we render first
   processLazyProperties();
@@ -125,7 +124,7 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
   // these _should_ always be accurate
   int w = view::bufferWidth;
   int h = view::bufferHeight;
-  std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
+  std::vector<unsigned char> buff = render::engine->readAltDisplayBuffer();
 
   // Set alpha to 1
   if (!options.transparentBackground) {
@@ -137,8 +136,7 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
     }
   }
 
-  render::engine->useAltDisplayBuffer = false;
-  if (options.transparentBackground) render::engine->lightCopy = false;
+  render::engine->setUseAltDisplayBuffer(false);
 
   return buff;
 }
