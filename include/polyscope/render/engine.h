@@ -697,7 +697,7 @@ public:
   void setTransparencyMode(TransparencyMode newMode);
   TransparencyMode getTransparencyMode();
   bool transparencyEnabled();
-  void setPeelEnabled(bool newVal); // if false, skips the min-depth peel filter (e.g. during ground plane shadow passes)
+  void setPeelEnabled(bool newVal); // if false, skips the min-depth peel filter (e.g. during ground shadows)
   bool getPeelEnabled() const;
   virtual void applyTransparencySettings() = 0;
   void addSlicePlane(std::string uniquePostfix); // TODO move slice planes out of the engine

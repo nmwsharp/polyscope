@@ -1349,7 +1349,8 @@ void Engine::renderScene(const SceneDrawCallbacks& callbacks) {
       auto scissorToLayerBounds = [&]() { setScissor(layerX, layerYFromBottom, layerW, layerH); };
 
       // For any viewport in a later layer that overlaps an earlier viewport, clear its region in sceneBufferFinal
-      // so the foreground inset renders cleanly on top rather than being occluded by earlier viewports under AlphaUnder.
+      // so the foreground inset renders cleanly on top rather than being occluded by earlier viewports under
+      // AlphaUnder.
       if (iLayer > 0) {
         bool boundFinal = false;
         for (int viewportInd : layer.viewportIndices) {

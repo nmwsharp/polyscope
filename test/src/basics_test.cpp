@@ -617,7 +617,7 @@ TEST_F(PolyscopeTest, GroundPlaneTest) {
 
 TEST_F(PolyscopeTest, ViewportAndWindowEdgeSizes) {
 
-  // NOTE: this is especially important for the shadow-only ground plane case, because it uses half-sized buffers 
+  // NOTE: this is especially important for the shadow-only ground plane case, because it uses half-sized buffers
   // and has special logic for that.
 
   auto psMesh = registerTriangleMesh();
@@ -629,7 +629,8 @@ TEST_F(PolyscopeTest, ViewportAndWindowEdgeSizes) {
     for (polyscope::GroundPlaneMode gpMode :
          {polyscope::GroundPlaneMode::TileReflection, polyscope::GroundPlaneMode::ShadowOnly}) {
       polyscope::options::groundPlaneMode = gpMode;
-      for (polyscope::TransparencyMode tMode : {polyscope::TransparencyMode::None, polyscope::TransparencyMode::Pretty}) {
+      for (polyscope::TransparencyMode tMode :
+           {polyscope::TransparencyMode::None, polyscope::TransparencyMode::Pretty}) {
         polyscope::options::transparencyMode = tMode;
         polyscope::show(1);
       }
