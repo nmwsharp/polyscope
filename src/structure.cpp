@@ -341,7 +341,7 @@ void Structure::setStructureUniforms(render::ShaderProgram& p) {
 
     // Attach the min depth texture, if needed
     if (p.hasTexture("t_minDepth") && !p.textureIsSet("t_minDepth")) {
-      p.setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
+      p.setTextureFromBuffer("t_minDepth", render::engine->getSceneDepthMinTexture());
     }
   }
 

@@ -5,6 +5,7 @@
 #include "polyscope/types.h"
 #include "polyscope/view.h"
 
+#include <functional>
 #include <memory>
 
 namespace polyscope {
@@ -25,9 +26,10 @@ public:
   GroundPlane() {};
 
   // Render the ground plane.
+  // drawStructuresFn renders the scene geometry needed for reflections/shadows.
   // isRedraw allows for an optimization: for rendering modes where the ground gets drawn many times per-frame, we only
   // need to generate expensive reflections (etc) once. Setting isRedraw=true skips generating this data.
-  void draw(bool isRedraw = false);
+  void draw(const std::function<void()>& drawStructuresFn, bool isRedraw = false);
 
   void buildGui();
   void prepare(); // does any and all setup work / allocations / etc, called automatically when drawing after a change

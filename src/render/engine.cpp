@@ -3,6 +3,7 @@
 
 #include "polyscope/render/engine.h"
 
+#include "polyscope/internal.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/colormap_defs.h"
 #include "polyscope/render/material_defs.h"
@@ -459,7 +460,18 @@ void Engine::buildEngineGui() {
 
 FrameBuffer& Engine::getDisplayBuffer() { return useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer; }
 
+void Engine::setUseAltDisplayBuffer(bool newVal) { useAltDisplayBuffer = newVal; }
+
+std::vector<unsigned char> Engine::readAltDisplayBuffer() { return displayBufferAlt->readBuffer(); }
+
+bool Engine::bindSceneBuffer() {
+  setCurrentPixelScaling(ssaaFactor * options::uiScale);
+  return sceneBuffer->bindForRendering();
+}
+
 TextureBuffer& Engine::getFinalSceneColorTexture() { return *sceneColorFinal; }
+
+TextureBuffer* Engine::getSceneDepthMinTexture() { return sceneDepthMin.get(); }
 
 void Engine::setBackgroundColor(glm::vec3 c) {
   FrameBuffer& targetBuffer = getDisplayBuffer();
@@ -498,91 +510,23 @@ void Engine::clearDisplay() {
 }
 
 
-void Engine::clearSceneBuffer() { sceneBuffer->clear(); }
-
 void Engine::resizeScreenBuffersAndSetViewports() {
   view::updateViewportDimensions();
   unsigned int width = view::bufferWidth;
   unsigned int height = view::bufferHeight;
   displayBuffer->resize(width, height);
   displayBufferAlt->resize(width, height);
+
+  displayBuffer->setViewport(0, 0, width, height);
+  displayBufferAlt->setViewport(0, 0, width, height);
+
   sceneBuffer->resize(ssaaFactor * width, ssaaFactor * height);
   sceneBufferFinal->resize(ssaaFactor * width, ssaaFactor * height);
   sceneDepthMinFrame->resize(ssaaFactor * width, ssaaFactor * height);
 
-  displayBuffer->setViewport(0, 0, width, height);
-  displayBufferAlt->setViewport(0, 0, width, height);
   sceneBuffer->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
   sceneBufferFinal->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
   sceneDepthMinFrame->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
-}
-
-bool Engine::bindSceneBuffer() {
-  setCurrentPixelScaling(ssaaFactor * options::uiScale);
-  return sceneBuffer->bindForRendering();
-}
-
-void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
-
-  glm::vec4 currV = getCurrentViewport();
-
-  // If the viewport extents are 0, don't do anything. This happens e.g. on Windows when the window is minimized.
-  if (currV[2] == 0 || currV[3] == 0) {
-    return;
-  }
-
-  // compute downsampling rate
-  float sampleX = texture->getSizeX() / currV[2];
-  float sampleY = texture->getSizeY() / currV[3];
-  if (sampleX != sampleY) exception("lighting downsampling should have same aspect");
-  int sampleLevel;
-  if (sampleX < 1.) {
-    sampleLevel = 1;
-  } else {
-    if (sampleX != static_cast<int>(sampleX)) exception("lighting downsampling should have integer ratio");
-    sampleLevel = static_cast<int>(sampleX);
-    if (sampleLevel > 4) exception("lighting downsampling only implemented up to 4x");
-  }
-
-  // == Lazily regnerate the mapper if it doesn't match the current settings
-  if (!mapLight || currLightingSampleLevel != sampleLevel || currLightingTransparencyMode != transparencyMode) {
-
-    std::string sampleRuleName = "";
-    if (sampleLevel == 1) sampleRuleName = "DOWNSAMPLE_RESOLVE_1";
-    if (sampleLevel == 2) sampleRuleName = "DOWNSAMPLE_RESOLVE_2";
-    if (sampleLevel == 3) sampleRuleName = "DOWNSAMPLE_RESOLVE_3";
-    if (sampleLevel == 4) sampleRuleName = "DOWNSAMPLE_RESOLVE_4";
-
-    std::vector<std::string> resolveRules = {sampleRuleName};
-
-    switch (transparencyMode) {
-    case TransparencyMode::None:
-      break;
-    case TransparencyMode::Simple:
-      resolveRules.push_back("TRANSPARENCY_RESOLVE_SIMPLE");
-      break;
-    case TransparencyMode::Pretty:
-      break;
-    }
-
-    mapLight = render::engine->requestShader("MAP_LIGHT", resolveRules, render::ShaderReplacementDefaults::Process);
-    mapLight->setAttribute("a_position", screenTrianglesCoords());
-    mapLight->setDrawCount(screenTrianglesCoords().size());
-    currLightingSampleLevel = sampleLevel;
-    currLightingTransparencyMode = transparencyMode;
-  }
-
-  mapLight->setUniform("u_bgColor", glm::vec3{view::bgColor[0], view::bgColor[1], view::bgColor[2]});
-  mapLight->setUniform("u_bgAlpha", view::bgColor[3]);
-  setTonemapUniforms(*mapLight);
-  mapLight->setTextureFromBuffer("t_image", texture.get());
-
-  glm::vec2 texelSize{1. / texture->getSizeX(), 1. / texture->getSizeY()};
-  mapLight->setUniform("u_texelSize", texelSize);
-
-  setBlendMode(BlendMode::Disable);
-  render::engine->setDepthMode(DepthMode::Disable);
-  mapLight->draw();
 }
 
 void Engine::setTonemapUniforms(ShaderProgram& p) {
@@ -698,6 +642,21 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
   // Note: The display frame buffer should be manually wrapped by child classes
 
+  { // Alternate display buffer (for offscreen screenshot rendering)
+    std::shared_ptr<RenderBuffer> sceneColorAlt =
+        generateRenderBuffer(RenderBufferType::ColorAlpha, view::bufferWidth, view::bufferHeight);
+    std::shared_ptr<RenderBuffer> sceneDepthAlt =
+        generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+
+    displayBufferAlt = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
+    displayBufferAlt->addColorBuffer(sceneColorAlt);
+    displayBufferAlt->addDepthBuffer(sceneDepthAlt);
+    displayBufferAlt->setDrawBuffers();
+
+    displayBufferAlt->clearColor = glm::vec3{1., 1., 1.};
+    displayBufferAlt->clearAlpha = 0.0;
+  }
+
   { // Scene buffer
     sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
     sceneDepth = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
@@ -719,7 +678,7 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     sceneDepthMinFrame->clearDepth = 0.0;
   }
 
-  { // "Final" scene buffer (after resolving)
+  { // "Final" scene buffer (after resolving / compositing)
     sceneColorFinal = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
 
     sceneBufferFinal = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
@@ -728,21 +687,6 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
     sceneBufferFinal->clearColor = glm::vec3{1., 1., 1.};
     sceneBufferFinal->clearAlpha = 0.0;
-  }
-
-  { // Alternate display buffer
-    std::shared_ptr<RenderBuffer> sceneColorAlt =
-        generateRenderBuffer(RenderBufferType::ColorAlpha, view::bufferWidth, view::bufferHeight);
-    std::shared_ptr<RenderBuffer> sceneDepthAlt =
-        generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
-
-    displayBufferAlt = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
-    displayBufferAlt->addColorBuffer(sceneColorAlt);
-    displayBufferAlt->addDepthBuffer(sceneDepthAlt);
-    displayBufferAlt->setDrawBuffers();
-
-    displayBufferAlt->clearColor = glm::vec3{1., 1., 1.};
-    displayBufferAlt->clearAlpha = 0.0;
   }
 
   { // Pick buffer
@@ -758,8 +702,16 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   // Make sure all the buffer sizes are up to date
   updateWindowSize(true);
 
-  { // Generate the general-use programs
+  { // Generate the general-use and pipeline programs
     // clang-format off
+    compositePeel = requestShader("COMPOSITE_PEEL", {}, ShaderReplacementDefaults::Process);
+    compositePeel->setAttribute("a_position", screenTrianglesCoords());
+    compositePeel->setDrawCount(screenTrianglesCoords().size());
+
+    copyDepth = requestShader("DEPTH_COPY", {}, ShaderReplacementDefaults::Process);
+    copyDepth->setAttribute("a_position", screenTrianglesCoords());
+    copyDepth->setDrawCount(screenTrianglesCoords().size());
+
     renderTexturePlain = render::engine->requestShader("TEXTURE_DRAW_PLAIN", {}, render::ShaderReplacementDefaults::Process);
     renderTexturePlain->setAttribute("a_position", screenTrianglesCoords());
     renderTexturePlain->setDrawCount(screenTrianglesCoords().size());
@@ -774,14 +726,6 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
     renderTextureSphereBG = render::engine->requestShader("TEXTURE_DRAW_SPHEREBG", {}, render::ShaderReplacementDefaults::Process);
     renderTextureSphereBG->setAttribute("a_position", distantCubeCoords());
-
-    compositePeel = render::engine->requestShader("COMPOSITE_PEEL", {}, render::ShaderReplacementDefaults::Process);
-    compositePeel->setAttribute("a_position", screenTrianglesCoords());
-    compositePeel->setDrawCount(screenTrianglesCoords().size());
-
-    copyDepth = render::engine->requestShader("DEPTH_COPY", {}, render::ShaderReplacementDefaults::Process);
-    copyDepth->setAttribute("a_position", screenTrianglesCoords());
-    copyDepth->setDrawCount(screenTrianglesCoords().size());
     // clang-format on
   }
 
@@ -920,34 +864,28 @@ std::vector<glm::vec4> Engine::distantCubeCoords() {
   return coords;
 }
 
-void Engine::updateMinDepthTexture() {
-  sceneDepthMinFrame->bindForRendering();
-  setDepthMode(DepthMode::Greater);
-  copyDepth->setTextureFromBuffer("t_depth", sceneDepth.get());
-  copyDepth->draw();
-}
-
 void Engine::freeAllOwnedResources() {
 
   displayBuffer.reset();
   displayBufferAlt.reset();
   sceneBuffer.reset();
   sceneBufferFinal.reset();
-  pickFramebuffer.reset();
   sceneDepthMinFrame.reset();
+  pickFramebuffer.reset();
   sceneColor.reset();
   sceneColorFinal.reset();
   sceneDepth.reset();
   sceneDepthMin.reset();
   pickColorBuffer.reset();
   pickDepthBuffer.reset();
+  compositePeel.reset();
+  mapLight.reset();
+  copyDepth.reset();
+  currLightingSampleLevel = -1;
   renderTexturePlain.reset();
   renderTextureDot3.reset();
   renderTextureMap3.reset();
   renderTextureSphereBG.reset();
-  compositePeel.reset();
-  mapLight.reset();
-  copyDepth.reset();
 
   groundPlane.freeAllOwnedResources();
   materials.clear();
@@ -1276,6 +1214,389 @@ void Engine::preserveResourceUntilImguiFrameCompletes(std::shared_ptr<TextureBuf
 }
 
 void Engine::clearResourcesPreservedForImguiFrame() { resourcesPreservedForImGuiFrame.clear(); }
+
+namespace {
+
+bool viewportsOverlap(const view::ViewParameters& a, const view::ViewParameters& b) {
+  if (a.viewportBufferWidth <= 0 || a.viewportBufferHeight <= 0 || b.viewportBufferWidth <= 0 ||
+      b.viewportBufferHeight <= 0) {
+    return false;
+  }
+  return a.viewportPosX < b.viewportPosX + b.viewportBufferWidth &&
+         b.viewportPosX < a.viewportPosX + a.viewportBufferWidth &&
+         a.viewportPosY < b.viewportPosY + b.viewportBufferHeight &&
+         b.viewportPosY < a.viewportPosY + a.viewportBufferHeight;
+}
+
+bool viewportOverlapsEarlier(int viewportInd) {
+  const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
+  for (int i = 0; i < viewportInd; i++) {
+    if (viewportsOverlap(vp, view::getViewportParameters(i))) return true;
+  }
+  return false;
+}
+
+} // namespace
+
+void Engine::updateMinDepthTexture() {
+  sceneDepthMinFrame->bindForRendering();
+  setDepthMode(DepthMode::Greater);
+  copyDepth->setTextureFromBuffer("t_depth", sceneDepth.get());
+  copyDepth->draw();
+}
+
+void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
+
+  glm::vec4 currV = getCurrentViewport();
+
+  // If the viewport extents are 0, don't do anything. This happens e.g. on Windows when the window is minimized.
+  if (currV[2] == 0 || currV[3] == 0) {
+    return;
+  }
+
+  // compute downsampling rate
+  float sampleX = texture->getSizeX() / currV[2];
+  float sampleY = texture->getSizeY() / currV[3];
+  if (sampleX != sampleY) exception("lighting downsampling should have same aspect");
+  int sampleLevel;
+  if (sampleX < 1.) {
+    sampleLevel = 1;
+  } else {
+    if (sampleX != static_cast<int>(sampleX)) exception("lighting downsampling should have integer ratio");
+    sampleLevel = static_cast<int>(sampleX);
+    if (sampleLevel > 4) exception("lighting downsampling only implemented up to 4x");
+  }
+
+  // == Lazily regenerate the mapper if it doesn't match the current settings
+  if (!mapLight || currLightingSampleLevel != sampleLevel || currLightingTransparencyMode != transparencyMode) {
+
+    std::string sampleRuleName = "";
+    if (sampleLevel == 1) sampleRuleName = "DOWNSAMPLE_RESOLVE_1";
+    if (sampleLevel == 2) sampleRuleName = "DOWNSAMPLE_RESOLVE_2";
+    if (sampleLevel == 3) sampleRuleName = "DOWNSAMPLE_RESOLVE_3";
+    if (sampleLevel == 4) sampleRuleName = "DOWNSAMPLE_RESOLVE_4";
+
+    std::vector<std::string> resolveRules = {sampleRuleName};
+
+    switch (transparencyMode) {
+    case TransparencyMode::None:
+      break;
+    case TransparencyMode::Simple:
+      resolveRules.push_back("TRANSPARENCY_RESOLVE_SIMPLE");
+      break;
+    case TransparencyMode::Pretty:
+      break;
+    }
+
+    mapLight = requestShader("MAP_LIGHT", resolveRules, ShaderReplacementDefaults::Process);
+    mapLight->setAttribute("a_position", screenTrianglesCoords());
+    mapLight->setDrawCount(screenTrianglesCoords().size());
+    currLightingSampleLevel = sampleLevel;
+    currLightingTransparencyMode = transparencyMode;
+  }
+
+  mapLight->setUniform("u_bgColor", glm::vec3{view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+  mapLight->setUniform("u_bgAlpha", view::bgColor[3]);
+  setTonemapUniforms(*mapLight);
+  mapLight->setTextureFromBuffer("t_image", texture.get());
+
+  glm::vec2 texelSize{1. / texture->getSizeX(), 1. / texture->getSizeY()};
+  mapLight->setUniform("u_texelSize", texelSize);
+
+  setBlendMode(BlendMode::Disable);
+  setDepthMode(DepthMode::Disable);
+  mapLight->draw();
+}
+
+void Engine::renderScene(const SceneDrawCallbacks& callbacks) {
+
+  applyTransparencySettings();
+
+  if (!options::renderScene) return;
+
+  int numViewports = view::getNumViewports();
+  if (numViewports == 0) {
+    error("there are no viewports");
+  }
+
+  // We internally change the active viewport to render; save it here so we can restore at the end
+  int savedActiveViewport = view::getActiveViewportIndex();
+  int ssaa = ssaaFactor;
+
+  // Helper to set viewport + scissor on the currently bound full-window buffer for a given viewport.
+  // Returns false if the viewport has zero area and should be skipped.
+  auto setViewportScissor = [&](const view::ViewParameters& vp) -> bool {
+    if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) return false;
+    // (viewportPosY is y-from-top like everywhere else, but OpenGL has y=0 at the bottom, so flip it)
+    int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
+    setViewportAndScissor(ssaa * vp.viewportPosX, ssaa * viewportPosYFromBottom, ssaa * vp.viewportBufferWidth,
+                          ssaa * vp.viewportBufferHeight);
+    return true;
+  };
+
+  if (transparencyMode == TransparencyMode::Pretty) {
+    // Special depth peeling case: multiple render passes.
+    // We render into the single full-window sceneBuffer using glViewport + glScissor, and composite each peel pass
+    // into sceneBufferFinal in one fullscreen draw. Non-overlapping viewports are batched into the same layer so
+    // each depth-peeling pass shares a single clear / composite / min-depth update across the whole layer.
+    // (ShadowOnly caches one shared shadow texture across passes via isRedraw, so don't batch multiple viewports
+    // into the same layer in that mode.)
+    bool canBatchLayer = (options::groundPlaneMode != GroundPlaneMode::ShadowOnly);
+    std::vector<std::vector<int>> layers;
+    for (int viewportInd = 0; viewportInd < numViewports; viewportInd++) {
+      const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
+      bool fitsInCurrentLayer = canBatchLayer && !layers.empty();
+      if (fitsInCurrentLayer) {
+        for (int existingInd : layers.back()) {
+          if (viewportsOverlap(vp, view::getViewportParameters(existingInd))) {
+            fitsInCurrentLayer = false;
+            break;
+          }
+        }
+      }
+      if (!fitsInCurrentLayer) {
+        layers.emplace_back();
+      }
+      layers.back().push_back(viewportInd);
+    }
+
+    // Clear the final buffer explicitly since we will gradually composite in to it rather than just blitting directly
+    // as in normal rendering.
+    disableScissor();
+    sceneBufferFinal->clearColor = glm::vec3{0., 0., 0.};
+    sceneBufferFinal->clearAlpha = 0;
+    sceneBufferFinal->clear();
+
+    sceneBuffer->clearColor = glm::vec3{0., 0., 0.};
+    sceneBuffer->clearAlpha = 0.;
+
+    for (size_t iLayer = 0; iLayer < layers.size(); iLayer++) {
+      const std::vector<int>& layer = layers[iLayer];
+
+      // Compute the bounding box of this layer's viewports (in top-down buffer coordinates) so that per-pass
+      // clear, compositePeel, and updateMinDepthTexture only touch this layer's pixels. Keeping glViewport
+      // full-window while scissoring preserves 1:1 UV sampling in fullscreen-quad shaders and avoids full-screen
+      // tile traffic when layers cannot be batched (e.g. overlapping insets or ShadowOnly).
+      int minX = view::bufferWidth, minY = view::bufferHeight;
+      int maxX = 0, maxY = 0;
+      for (int viewportInd : layer) {
+        const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
+        if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) continue;
+        minX = std::min(minX, vp.viewportPosX);
+        minY = std::min(minY, vp.viewportPosY);
+        maxX = std::max(maxX, vp.viewportPosX + vp.viewportBufferWidth);
+        maxY = std::max(maxY, vp.viewportPosY + vp.viewportBufferHeight);
+      }
+      minX = std::max(0, minX);
+      minY = std::max(0, minY);
+      maxX = std::min(static_cast<int>(view::bufferWidth), maxX);
+      maxY = std::min(static_cast<int>(view::bufferHeight), maxY);
+      if (minX >= maxX || minY >= maxY) {
+        for (int viewportInd : layer) {
+          view::activateViewport(viewportInd);
+          view::ensureViewValid();
+          view::updateFlight();
+        }
+        continue;
+      }
+
+      int layerX = ssaa * minX;
+      int layerYFromBottom = ssaa * (view::bufferHeight - maxY);
+      unsigned int layerW = static_cast<unsigned int>(ssaa * (maxX - minX));
+      unsigned int layerH = static_cast<unsigned int>(ssaa * (maxY - minY));
+      auto scissorToLayerBounds = [&]() { setScissor(layerX, layerYFromBottom, layerW, layerH); };
+
+      // For any viewport in a later layer that overlaps an earlier viewport, clear its region in sceneBufferFinal
+      // so the foreground inset renders cleanly on top rather than being occluded by earlier viewports under AlphaUnder.
+      if (iLayer > 0) {
+        bool boundFinal = false;
+        for (int viewportInd : layer) {
+          if (!viewportOverlapsEarlier(viewportInd)) continue;
+          const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
+          if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) continue;
+          if (!boundFinal) {
+            if (!sceneBufferFinal->bindForRendering()) break;
+            boundFinal = true;
+          }
+          if (setViewportScissor(vp)) {
+            sceneBufferFinal->clear();
+          }
+        }
+        disableScissor();
+      }
+
+      setDepthMode(DepthMode::Less); // we need depth to be enabled for the clear below to do anything
+      if (!sceneDepthMinFrame->bindForRendering()) continue;
+      scissorToLayerBounds();
+      sceneDepthMinFrame->clear();
+
+      for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
+        bool isRedraw = iPass > 0;
+        internal::renderPassIsRedraw = isRedraw;
+
+        if (!bindSceneBuffer()) {
+          // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
+          break;
+        }
+        setDepthMode(DepthMode::Less);
+        scissorToLayerBounds();
+        sceneBuffer->clear();
+
+        for (int viewportInd : layer) {
+          view::activateViewport(viewportInd);
+          if (!isRedraw) {
+            view::ensureViewValid();
+            view::updateFlight();
+          }
+          const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
+          if (!setViewportScissor(vp)) continue;
+
+          applyTransparencySettings();
+          callbacks.drawStructures();
+
+          // Draw ground plane, slicers, etc
+          groundPlane.draw(callbacks.drawStructures, isRedraw);
+          if (!isRedraw) {
+            // Only on first pass (kinda weird, but works out, and doesn't really matter)
+            callbacks.drawSlicePlanes();
+          }
+
+          applyTransparencySettings();
+          callbacks.drawStructuresDelayed();
+        }
+
+        // Composite the result of this pass in to the result buffer (full-window glViewport with layer-bounds
+        // scissor; gaps inside the layer bounds are (0, 0, 0, 0) in sceneColor, which is a no-op under AlphaUnder).
+        sceneBufferFinal->bindForRendering();
+        scissorToLayerBounds();
+        setDepthMode(DepthMode::Disable);
+        setBlendMode(BlendMode::AlphaUnder);
+        compositePeel->setTextureFromBuffer("t_image", sceneColor.get());
+        compositePeel->draw();
+
+        // Update the minimum depth texture (also scissored to the layer bounds)
+        updateMinDepthTexture();
+      }
+
+      disableScissor();
+      internal::renderPassIsRedraw = false; // reset to usual value
+    }
+
+  } else {
+    // Normal case: single render pass into the full-window sceneBuffer, then one blit to sceneBufferFinal.
+
+    internal::renderPassIsRedraw = false;
+
+    disableScissor();
+    if (bindSceneBuffer()) {
+      setDepthMode(DepthMode::Less); // ensure depth mask is enabled for full depth clear
+      sceneBuffer->clearColor = {0., 0., 0.};
+      sceneBuffer->clearAlpha = 0.;
+      sceneBuffer->clear();
+
+      for (int viewportInd = 0; viewportInd < numViewports; viewportInd++) {
+        view::activateViewport(viewportInd);
+        view::ensureViewValid();
+        view::updateFlight();
+
+        const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
+        if (!setViewportScissor(vp)) continue;
+
+        // If this viewport overlaps any earlier viewport, clear only its scissored region so it renders cleanly on top.
+        if (viewportOverlapsEarlier(viewportInd)) {
+          setDepthMode(DepthMode::Less);
+          sceneBuffer->clear();
+        }
+
+        applyTransparencySettings();
+        callbacks.drawStructures();
+
+        groundPlane.draw(callbacks.drawStructures);
+        callbacks.drawSlicePlanes();
+
+        applyTransparencySettings();
+        callbacks.drawStructuresDelayed();
+      }
+
+      disableScissor();
+      sceneBuffer->blitTo(sceneBufferFinal.get(), 0, 0);
+    }
+  }
+
+  disableScissor();
+
+  // restore the active viewport as it was before the render call
+  view::activateViewport(savedActiveViewport);
+}
+
+void Engine::renderSceneToDisplay() {
+  bindDisplay();
+  applyLightingTransform(sceneColorFinal);
+}
+
+bool Engine::renderPickInActiveViewport(int viewportW, int viewportH, const std::function<void()>& drawPickFn) {
+  setDepthMode(DepthMode::Less);
+  setBlendMode(BlendMode::Disable);
+
+  pickFramebuffer->resize(viewportW, viewportH);
+  pickFramebuffer->setViewport(0, 0, viewportW, viewportH);
+  pickFramebuffer->clearColor = glm::vec3{0., 0., 0.};
+  if (!pickFramebuffer->bindForRendering()) return false;
+  pickFramebuffer->clear();
+
+  drawPickFn();
+  return true;
+}
+
+PickBufferSample Engine::renderAndReadPick(int xPos, int yPos, const std::function<void()>& drawPickFn) {
+  PickBufferSample sample;
+
+  int viewportW = view::getActiveViewportBufferWidth();
+  int viewportH = view::getActiveViewportBufferHeight();
+
+  // Be sure not to pick outside of buffer (-1 means render only, no readback)
+  if (xPos < -1 || xPos >= viewportW || yPos < -1 || yPos >= viewportH) {
+    return sample;
+  }
+
+  if (!renderPickInActiveViewport(viewportW, viewportH, drawPickFn)) {
+    return sample;
+  }
+
+  if (xPos == -1 || yPos == -1) {
+    return sample;
+  }
+
+  int flippedY = viewportH - 1 - yPos;
+  sample.color = pickFramebuffer->readFloat4(xPos, flippedY);
+  sample.clipDepth = pickFramebuffer->readDepth(xPos, flippedY);
+  sample.valid = true;
+  return sample;
+}
+
+void Engine::renderDebugPickToDisplay(const std::function<void()>& drawPickFn) {
+  FrameBuffer& targetDisplay = getDisplayBuffer();
+  targetDisplay.bindForRendering();
+  targetDisplay.clearColor = {0., 0., 0.};
+  targetDisplay.clearAlpha = 1.;
+  targetDisplay.clear();
+
+  int savedActiveViewport = view::getActiveViewportIndex();
+  for (int viewportInd = 0; viewportInd < view::getNumViewports(); viewportInd++) {
+    view::activateViewport(viewportInd);
+    const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
+    if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) continue;
+    if (!renderPickInActiveViewport(vp.viewportBufferWidth, vp.viewportBufferHeight, drawPickFn)) continue;
+    int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
+    pickFramebuffer->blitTo(&targetDisplay, vp.viewportPosX, viewportPosYFromBottom);
+  }
+  view::activateViewport(savedActiveViewport);
+}
+
+void Engine::showDebugTexturesInImGui() {
+  showTextureInImGuiWindow("Scene Buffer", sceneColor.get());
+  showTextureInImGuiWindow("Scene Final", sceneColorFinal.get());
+}
 
 
 } // namespace render
