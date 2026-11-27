@@ -475,9 +475,13 @@ void Engine::setCurrentViewport(glm::vec4 val) { currViewport = val; }
 glm::vec4 Engine::getCurrentViewport() { return currViewport; }
 void Engine::setCurrentPixelScaling(float val) { currPixelScale = val; }
 float Engine::getCurrentPixelScaling() { return currPixelScale; }
+void Engine::setScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
+  currScissor = {startX, startY, static_cast<int>(sizeX), static_cast<int>(sizeY)};
+  scissorEnabled = true;
+}
 void Engine::setViewportAndScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
   setCurrentViewport({startX, startY, sizeX, sizeY});
-  scissorEnabled = true;
+  setScissor(startX, startY, sizeX, sizeY);
 }
 void Engine::disableScissor() { scissorEnabled = false; }
 bool Engine::isScissorEnabled() const { return scissorEnabled; }
@@ -665,6 +669,9 @@ void Engine::setTransparencyMode(TransparencyMode newMode) {
 
 TransparencyMode Engine::getTransparencyMode() { return transparencyMode; }
 
+void Engine::setPeelEnabled(bool newVal) { peelEnabled = newVal; }
+bool Engine::getPeelEnabled() const { return peelEnabled; }
+
 bool Engine::transparencyEnabled() {
   switch (transparencyMode) {
   case TransparencyMode::None:
@@ -792,7 +799,7 @@ uint64_t Engine::getNextUniqueID() {
 
 void Engine::pushBindFramebufferForRendering(FrameBuffer& f) {
   if (currRenderFramebuffer == nullptr) exception("tried to push current framebuff on to stack, but it is null");
-  renderFramebufferStack.push_back({currRenderFramebuffer, currViewport, scissorEnabled});
+  renderFramebufferStack.push_back({currRenderFramebuffer, currViewport, currScissor, scissorEnabled});
   disableScissor();
   f.bindForRendering();
 }
@@ -807,6 +814,8 @@ void Engine::popBindFramebufferForRendering() {
   if (prev.scissorEnabled) {
     setViewportAndScissor(static_cast<int>(prev.viewport[0]), static_cast<int>(prev.viewport[1]),
                           static_cast<unsigned int>(prev.viewport[2]), static_cast<unsigned int>(prev.viewport[3]));
+    setScissor(prev.scissor[0], prev.scissor[1], static_cast<unsigned int>(prev.scissor[2]),
+               static_cast<unsigned int>(prev.scissor[3]));
   }
 }
 

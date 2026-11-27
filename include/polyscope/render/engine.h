@@ -565,6 +565,7 @@ public:
   virtual void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) = 0;
   virtual void setBackfaceCull(bool newVal = false) = 0;
   virtual void setViewportAndScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
+  virtual void setScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
   virtual void disableScissor();
   bool isScissorEnabled() const;
 
@@ -680,6 +681,8 @@ public:
   void setTransparencyMode(TransparencyMode newMode);
   TransparencyMode getTransparencyMode();
   bool transparencyEnabled();
+  void setPeelEnabled(bool newVal); // if false, skips the min-depth peel filter (e.g. during ground plane shadow passes)
+  bool getPeelEnabled() const;
   virtual void applyTransparencySettings() = 0;
   void addSlicePlane(std::string uniquePostfix); // TODO move slice planes out of the engine
   void removeSlicePlane(std::string uniquePostfix);
@@ -749,14 +752,17 @@ protected:
   bool enableFXAA = true;
   glm::vec4 currViewport; // TODO remove global viewport size. There is no reason for this, and stops us from doing
                           // screenshot renders while minimized.
+  glm::ivec4 currScissor{0, 0, 0, 0};
   bool scissorEnabled = false;
   float currPixelScale;
   TransparencyMode transparencyMode = TransparencyMode::None;
+  bool peelEnabled = true;
   int slicePlaneCount = 0;
   bool frontFaceCCW = true;
   struct SavedFramebufferState {
     FrameBuffer* framebuffer;
     glm::vec4 viewport;
+    glm::ivec4 scissor;
     bool scissorEnabled;
   };
   std::vector<SavedFramebufferState> renderFramebufferStack; // supports push/popBindFramebufferForRendering

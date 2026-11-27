@@ -2538,12 +2538,17 @@ std::vector<unsigned char> GLEngine::readDisplayBuffer() {
 }
 
 
-void GLEngine::setViewportAndScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
-  glViewport(startX, startY, sizeX, sizeY);
+void GLEngine::setScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
   glEnable(GL_SCISSOR_TEST);
   glScissor(startX, startY, sizeX, sizeY);
-  Engine::setViewportAndScissor(startX, startY, sizeX, sizeY);
+  Engine::setScissor(startX, startY, sizeX, sizeY);
   checkGLError();
+}
+
+void GLEngine::setViewportAndScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
+  glViewport(startX, startY, sizeX, sizeY);
+  setCurrentViewport({startX, startY, sizeX, sizeY});
+  setScissor(startX, startY, sizeX, sizeY);
 }
 
 void GLEngine::disableScissor() {

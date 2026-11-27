@@ -261,6 +261,7 @@ const ShaderReplacementRule TRANSPARENCY_PEEL_STRUCTURE (
       {"FRAG_DECLARATIONS", R"(
           uniform float u_transparency;
           uniform sampler2D t_minDepth;
+          uniform int u_enablePeel;
         )"},
       {"GENERATE_ALPHA", R"(
           alphaOut *= u_transparency;
@@ -268,14 +269,17 @@ const ShaderReplacementRule TRANSPARENCY_PEEL_STRUCTURE (
       {"GLOBAL_FRAGMENT_FILTER", R"(
           // assumption: "float depth" must be already set 
           // (use float depth = gl_FragCoord.z; if not doing anything special)
-          float minDepth = texelFetch(t_minDepth, ivec2(gl_FragCoord.xy), 0).x;
-          if(depth <= minDepth+1e-6) {
-            discard;
+          if(u_enablePeel != 0) { // usually true if this snippet is present. we disable rarely e.g. for ground plane
+            float minDepth = texelFetch(t_minDepth, ivec2(gl_FragCoord.xy), 0).x;
+            if(depth <= minDepth+1e-6) {
+              discard;
+            }
           }
         )"},
     },
     /* uniforms */ {
         {"u_transparency", RenderDataType::Float},
+        {"u_enablePeel", RenderDataType::Int},
     },
     /* attributes */ {},
     /* textures */ {

@@ -335,6 +335,10 @@ void Structure::setStructureUniforms(render::ShaderProgram& p) {
       p.setUniform("u_transparency", transparency.get());
     }
 
+    if (p.hasUniform("u_enablePeel")) {
+      p.setUniform("u_enablePeel", render::engine->getPeelEnabled() ? 1 : 0);
+    }
+
     // Attach the min depth texture, if needed
     if (p.hasTexture("t_minDepth") && !p.textureIsSet("t_minDepth")) {
       p.setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
