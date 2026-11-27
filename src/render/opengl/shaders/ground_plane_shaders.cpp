@@ -155,6 +155,7 @@ const ShaderStageSpecification GROUND_PLANE_TILE_REFLECT_FRAG_SHADER = {
       {"u_basisX", RenderDataType::Vector3Float},
       {"u_basisY", RenderDataType::Vector3Float},
       {"u_viewport", RenderDataType::Vector4Float},
+      {"u_texCoordMax", RenderDataType::Vector2Float},
       {"u_cameraHeight", RenderDataType::Float},
       {"u_groundHeight", RenderDataType::Float},
       {"u_upSign", RenderDataType::Float}
@@ -182,6 +183,7 @@ R"(
       uniform vec3 u_basisX;
       uniform vec3 u_basisY;
       uniform vec4 u_viewport;
+      uniform vec2 u_texCoordMax;
       uniform float u_cameraHeight;
       uniform float u_groundHeight;
       uniform float u_upSign;
@@ -194,7 +196,11 @@ R"(
       float specular( vec3 N, vec3 L, vec3 E, float shininess );
 
       vec4 sampleMirror() {
-        vec2 screenCoords = (gl_FragCoord.xy - u_viewport.xy) / u_viewport.zw;
+        vec2 localUV = (gl_FragCoord.xy - u_viewport.xy) / u_viewport.zw;
+        vec2 texel = 1.0 / vec2(textureSize(t_mirrorImage, 0));
+        vec2 uvMin = 0.5 * texel;
+        vec2 uvMax = max(uvMin, u_texCoordMax - 0.5 * texel);
+        vec2 screenCoords = clamp(localUV * u_texCoordMax, uvMin, uvMax);
         vec4 mirrorImage = texture(t_mirrorImage, screenCoords);
         return mirrorImage;
       }
@@ -261,6 +267,7 @@ const ShaderStageSpecification GROUND_PLANE_SHADOW_FRAG_SHADER = {
     { // uniforms
       {"u_lengthScale", RenderDataType::Float},
       {"u_viewport", RenderDataType::Vector4Float},
+      {"u_texCoordMax", RenderDataType::Vector2Float},
       {"u_shadowDarkness", RenderDataType::Float},
       {"u_cameraHeight", RenderDataType::Float},
       {"u_groundHeight", RenderDataType::Float},
@@ -283,6 +290,7 @@ R"(
       uniform sampler2D t_shadow;
       uniform mat4 u_viewMatrix;
       uniform vec4 u_viewport;
+      uniform vec2 u_texCoordMax;
       uniform float u_lengthScale;
       uniform float u_shadowDarkness;
       uniform float u_cameraHeight;
@@ -298,7 +306,11 @@ R"(
         float depth = gl_FragCoord.z;
         ${ GLOBAL_FRAGMENT_FILTER }$
 
-        vec2 screenCoords = (gl_FragCoord.xy - u_viewport.xy) / u_viewport.zw;
+        vec2 localUV = (gl_FragCoord.xy - u_viewport.xy) / u_viewport.zw;
+        vec2 texel = 1.0 / vec2(textureSize(t_shadow, 0));
+        vec2 uvMin = 0.5 * texel;
+        vec2 uvMax = max(uvMin, u_texCoordMax - 0.5 * texel);
+        vec2 screenCoords = clamp(localUV * u_texCoordMax, uvMin, uvMax);
         float shadowVal = texture(t_shadow, screenCoords).r;
         shadowVal = pow(clamp(shadowVal, 0., 1.), 0.25);
 

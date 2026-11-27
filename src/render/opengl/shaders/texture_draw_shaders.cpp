@@ -463,7 +463,9 @@ const ShaderStageSpecification DEPTH_TO_MASK = {
     ShaderStageType::Fragment,
     
     // uniforms
-    { }, 
+    {
+      {"u_texCoordMax", RenderDataType::Vector2Float},
+    }, 
 
     // attributes
     { },
@@ -477,11 +479,12 @@ R"(
 
       in vec2 tCoord;
       uniform sampler2D t_depth;
+      uniform vec2 u_texCoordMax;
       layout(location = 0) out vec4 outputF;
 
       void main()
       {
-        float depth = texture(t_depth, tCoord).r;
+        float depth = texture(t_depth, tCoord * u_texCoordMax).r;
         if(depth < 1.) {
           outputF = vec4(1., 0., 0., 1.);
         } else {
@@ -542,6 +545,7 @@ const ShaderStageSpecification BLUR_RGB = {
     // uniforms
     { 
       {"u_horizontal", RenderDataType::Int},
+      {"u_texCoordMax", RenderDataType::Vector2Float},
     }, 
 
     // attributes
@@ -559,24 +563,28 @@ R"(
       in vec2 tCoord;
       uniform sampler2D t_image;
       uniform int u_horizontal;
+      uniform vec2 u_texCoordMax;
       uniform float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216); // gaussian blur weights
       layout(location = 0) out vec4 outputF;
 
       void main()
       {
-        vec2 texScale = 1.0 / textureSize(t_image, 0);
-        vec3 valCenter = texture(t_image, tCoord).rgb;
+        vec2 texScale = 1.0 / vec2(textureSize(t_image, 0));
+        vec2 uvMin = 0.5 * texScale;
+        vec2 uvMax = max(uvMin, u_texCoordMax - 0.5 * texScale);
+        vec2 baseUV = clamp(tCoord * u_texCoordMax, uvMin, uvMax);
+        vec3 valCenter = texture(t_image, baseUV).rgb;
         vec3 val = valCenter * weight[0];
         if(u_horizontal == 1) {
             for(int i = 1; i < 5; ++i) {
-                val += texture(t_image, tCoord + vec2(texScale.x * i, 0.0)).rgb * weight[i];
-                val += texture(t_image, tCoord - vec2(texScale.x * i, 0.0)).rgb * weight[i];
+                val += texture(t_image, clamp(baseUV + vec2(texScale.x * i, 0.0), uvMin, uvMax)).rgb * weight[i];
+                val += texture(t_image, clamp(baseUV - vec2(texScale.x * i, 0.0), uvMin, uvMax)).rgb * weight[i];
             }
         }
         else {
             for(int i = 1; i < 5; ++i) {
-                val += texture(t_image, tCoord + vec2(0.0, texScale.y * i)).rgb * weight[i];
-                val += texture(t_image, tCoord - vec2(0.0, texScale.y * i)).rgb * weight[i];
+                val += texture(t_image, clamp(baseUV + vec2(0.0, texScale.y * i), uvMin, uvMax)).rgb * weight[i];
+                val += texture(t_image, clamp(baseUV - vec2(0.0, texScale.y * i), uvMin, uvMax)).rgb * weight[i];
             }
         }
 

@@ -241,6 +241,7 @@ void GroundPlane::draw(bool isRedraw) {
   glm::vec4 viewport = render::engine->getCurrentViewport();
   bool hadScissor = render::engine->isScissorEnabled();
   int factor = render::engine->getSSAAFactor();
+  glm::vec2 altTexCoordMax{1.f, 1.f};
 
   auto setUniforms = [&]() {
     glm::mat4 viewMat = view::getCameraViewMatrix();
@@ -255,6 +256,11 @@ void GroundPlane::draw(bool isRedraw) {
       groundPlaneProgram->setUniform("u_center", state::center());
       groundPlaneProgram->setUniform("u_basisX", baseForward);
       groundPlaneProgram->setUniform("u_basisY", baseRight);
+    }
+
+    if (options::groundPlaneMode == GroundPlaneMode::TileReflection ||
+        options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
+      groundPlaneProgram->setUniform("u_texCoordMax", altTexCoordMax);
     }
 
     if (options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
@@ -299,11 +305,12 @@ void GroundPlane::draw(bool isRedraw) {
   bool switchedFramebuffer = false;
 
   // Render the scene to implement the mirror effect
-  if (!isRedraw && options::groundPlaneMode == GroundPlaneMode::TileReflection) {
+  if (options::groundPlaneMode == GroundPlaneMode::TileReflection) {
     if (render::engine->transparencyEnabled()) {
       // Reflections are skipped when transparency is enabled; ensure the mirror texture has alpha == 0
       // once (at 1x1) without re-allocating or re-binding on every viewport/frame.
-      if (sceneAltFrameBuffer->getSizeX() != 1 || sceneAltFrameBuffer->getSizeY() != 1) {
+      altTexCoordMax = glm::vec2{1.f, 1.f};
+      if (!isRedraw && (sceneAltFrameBuffer->getSizeX() != 1 || sceneAltFrameBuffer->getSizeY() != 1)) {
         if (hadScissor) render::engine->disableScissor();
         sceneAltFrameBuffer->resize(1, 1);
         sceneAltFrameBuffer->setViewport(0, 0, 1, 1);
@@ -313,117 +320,144 @@ void GroundPlane::draw(bool isRedraw) {
         switchedFramebuffer = true;
       }
     } else {
-      // Prepare the alternate scene buffers sized to the active viewport
-      // (use a texture 1/4 the area of the viewport buffer, it's supposed to be blurry anyway and this saves perf)
-      if (hadScissor) render::engine->disableScissor();
-      unsigned int altW = std::max(1, factor * view::getActiveViewportBufferWidth() / 2);
-      unsigned int altH = std::max(1, factor * view::getActiveViewportBufferHeight() / 2);
-      render::engine->setBlendMode(BlendMode::AlphaOver);
-      render::engine->setDepthMode(DepthMode::Less);
-      sceneAltFrameBuffer->resize(altW, altH);
-      sceneAltFrameBuffer->setViewport(0, 0, altW, altH);
-      render::engine->setCurrentPixelScaling(factor / 2. * options::uiScale);
+      // Keep the alternate scene buffer at half the full-window size (allocated once per window/SSAA size)
+      // and render each viewport into its (0, 0, altW, altH) subregion so differing viewport sizes never reallocate.
+      unsigned int fullAltW = static_cast<unsigned int>(std::max(1, factor * view::bufferWidth / 2));
+      unsigned int fullAltH = static_cast<unsigned int>(std::max(1, factor * view::bufferHeight / 2));
+      unsigned int altW =
+          std::min(fullAltW, static_cast<unsigned int>(std::max(1, factor * view::getActiveViewportBufferWidth() / 2)));
+      unsigned int altH = std::min(
+          fullAltH, static_cast<unsigned int>(std::max(1, factor * view::getActiveViewportBufferHeight() / 2)));
+      altTexCoordMax = glm::vec2{static_cast<float>(altW) / fullAltW, static_cast<float>(altH) / fullAltH};
 
-      sceneAltFrameBuffer->bindForRendering();
-      sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
-      sceneAltFrameBuffer->clearAlpha = 0.0f;
-      sceneAltFrameBuffer->clear();
-      switchedFramebuffer = true;
+      if (!isRedraw) {
+        render::engine->setBlendMode(BlendMode::AlphaOver);
+        render::engine->setDepthMode(DepthMode::Less);
+        sceneAltFrameBuffer->resize(fullAltW, fullAltH);
+        sceneAltFrameBuffer->setViewport(0, 0, fullAltW, fullAltH);
+        render::engine->setCurrentPixelScaling(factor / 2. * options::uiScale);
 
-      // Push a reflected view matrix
-      glm::mat4 origViewMat = view::viewMat;
+        sceneAltFrameBuffer->bindForRendering();
+        render::engine->setViewportAndScissor(0, 0, altW, altH);
+        sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
+        sceneAltFrameBuffer->clearAlpha = 0.0f;
+        sceneAltFrameBuffer->clear();
+        switchedFramebuffer = true;
 
-      glm::vec3 mirrorN = baseUp * sign;
-      glm::mat3 mirrorMat3 = glm::mat3(1.0) - 2.0f * glm::outerProduct(mirrorN, mirrorN);
-      glm::vec3 tVec{0., 0., 0.};
-      tVec[iP] = -groundHeight;
-      glm::mat4 mirrorMat =
-          glm::translate(glm::mat4(1.0), -tVec) * glm::mat4(mirrorMat3) * glm::translate(glm::mat4(1.0), tVec);
-      view::viewMat = view::viewMat * mirrorMat;
+        // Push a reflected view matrix
+        glm::mat4 origViewMat = view::viewMat;
 
-      // Flip the orientation
-      render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
+        glm::vec3 mirrorN = baseUp * sign;
+        glm::mat3 mirrorMat3 = glm::mat3(1.0) - 2.0f * glm::outerProduct(mirrorN, mirrorN);
+        glm::vec3 tVec{0., 0., 0.};
+        tVec[iP] = -groundHeight;
+        glm::mat4 mirrorMat =
+            glm::translate(glm::mat4(1.0), -tVec) * glm::mat4(mirrorMat3) * glm::translate(glm::mat4(1.0), tVec);
+        view::viewMat = view::viewMat * mirrorMat;
 
-      // Draw everything
-      drawStructures();
+        // Flip the orientation
+        render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
 
-      // Restore original values
-      render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
-      view::viewMat = origViewMat;
+        // Draw everything
+        drawStructures();
+
+        // Restore original values
+        render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
+        view::viewMat = origViewMat;
+      }
     }
   }
 
   // Render the scene to implement the shadow effect
-  if (!isRedraw && options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
-    if (hadScissor) render::engine->disableScissor();
+  if (options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
+    // Keep the alternate and blur buffers at fixed window-proportional sizes (allocated once per window/SSAA size)
+    // and render/blur each viewport in its (0, 0, altW/blurW, altH/blurH) subregion so differing viewport sizes never
+    // reallocate.
+    unsigned int fullAltW = static_cast<unsigned int>(std::max(1, factor * view::bufferWidth));
+    unsigned int fullAltH = static_cast<unsigned int>(std::max(1, factor * view::bufferHeight));
+    unsigned int fullBlurW = std::max(1u, fullAltW / 2);
+    unsigned int fullBlurH = std::max(1u, fullAltH / 2);
 
-    // Prepare the alternate scene buffers sized to the active viewport
-    unsigned int altW = std::max(1, factor * view::getActiveViewportBufferWidth());
-    unsigned int altH = std::max(1, factor * view::getActiveViewportBufferHeight());
-    unsigned int blurW = std::max(1u, altW / 2);
-    unsigned int blurH = std::max(1u, altH / 2);
+    unsigned int altW =
+        std::min(fullAltW, static_cast<unsigned int>(std::max(1, factor * view::getActiveViewportBufferWidth())));
+    unsigned int altH =
+        std::min(fullAltH, static_cast<unsigned int>(std::max(1, factor * view::getActiveViewportBufferHeight())));
+    unsigned int blurW = std::min(fullBlurW, std::max(1u, altW / 2));
+    unsigned int blurH = std::min(fullBlurH, std::max(1u, altH / 2));
 
-    // Ensure blur buffers are the right shape (copyTexProgram & blurProgram overwrite every pixel with BlendMode::Disable)
-    for (int i = 0; i < 2; i++) {
-      blurFrameBuffers[i]->resize(blurW, blurH);
-      blurFrameBuffers[i]->setViewport(0, 0, blurW, blurH);
-    }
+    glm::vec2 altDepthTexCoordMax{static_cast<float>(altW) / fullAltW, static_cast<float>(altH) / fullAltH};
+    glm::vec2 blurTexCoordMax{static_cast<float>(blurW) / fullBlurW, static_cast<float>(blurH) / fullBlurH};
+    altTexCoordMax = blurTexCoordMax;
 
-    render::engine->setBlendMode(BlendMode::AlphaOver);
-    render::engine->setDepthMode(DepthMode::Less);
-    sceneAltFrameBuffer->resize(altW, altH);
-    sceneAltFrameBuffer->setViewport(0, 0, altW, altH);
+    if (!isRedraw) {
+      // Ensure blur buffers are the right shape (copyTexProgram & blurProgram overwrite every pixel with BlendMode::Disable)
+      for (int i = 0; i < 2; i++) {
+        blurFrameBuffers[i]->resize(fullBlurW, fullBlurH);
+        blurFrameBuffers[i]->setViewport(0, 0, fullBlurW, fullBlurH);
+      }
 
-    sceneAltFrameBuffer->bindForRendering();
-    sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
-    sceneAltFrameBuffer->clear();
-    switchedFramebuffer = true;
+      render::engine->setBlendMode(BlendMode::AlphaOver);
+      render::engine->setDepthMode(DepthMode::Less);
+      sceneAltFrameBuffer->resize(fullAltW, fullAltH);
+      sceneAltFrameBuffer->setViewport(0, 0, fullAltW, fullAltH);
 
-    // Push a view matrix which projects on to the ground plane
-    glm::mat4 origViewMat = view::viewMat;
-    glm::mat4 projMat = glm::mat4(1.0);
-    projMat[iP][iP] = 0.;
-    projMat[3][iP] = groundHeight;
-    view::viewMat = view::viewMat * projMat;
-    view::overrideClipPlanes = true; // set the clip planes manually
-    view::overrideNearClipRelative = view::defaultNearClipRatio;
-    view::overrideFarClipRelative = view::defaultFarClipRatio;
+      sceneAltFrameBuffer->bindForRendering();
+      render::engine->setViewportAndScissor(0, 0, altW, altH);
+      sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
+      sceneAltFrameBuffer->clear();
+      switchedFramebuffer = true;
 
-    // Draw everything (skip depth-peel filter: shadows come from all geometry and render into a viewport-sized
-    // buffer whose coordinates do not match the full-window t_minDepth texture)
-    render::engine->setDepthMode(DepthMode::Less);
-    render::engine->setBlendMode(BlendMode::Disable);
-    render::engine->setPeelEnabled(false);
-    drawStructures();
-    render::engine->setPeelEnabled(true);
+      // Push a view matrix which projects on to the ground plane
+      glm::mat4 origViewMat = view::viewMat;
+      glm::mat4 projMat = glm::mat4(1.0);
+      projMat[iP][iP] = 0.;
+      projMat[3][iP] = groundHeight;
+      view::viewMat = view::viewMat * projMat;
+      view::overrideClipPlanes = true; // set the clip planes manually
+      view::overrideNearClipRelative = view::defaultNearClipRatio;
+      view::overrideFarClipRelative = view::defaultFarClipRatio;
 
-    // Copy the depth buffer to a texture (while upsampling)
-    render::engine->setBlendMode(BlendMode::Disable);
-    blurFrameBuffers[0]->bindForRendering();
-    copyTexProgram->draw();
+      // Draw everything (skip depth-peel filter: shadows come from all geometry and render into a subregion of
+      // sceneAltFrameBuffer whose coordinates do not match the full-window t_minDepth texture)
+      render::engine->setDepthMode(DepthMode::Less);
+      render::engine->setBlendMode(BlendMode::Disable);
+      render::engine->setPeelEnabled(false);
+      drawStructures();
+      render::engine->setPeelEnabled(true);
 
-    // == Blur
-
-    // Do some blur iterations (ends in same buffer it started in)
-    int nBlur = options::shadowBlurIters * render::engine->getSSAAFactor();
-    // int nBlur = 0;
-    for (int i = 0; i < nBlur; i++) {
-      // horizontal blur
-      blurFrameBuffers[1]->bindForRendering();
-      blurProgram->setTextureFromBuffer("t_image", blurColorTextures[0].get());
-      blurProgram->setUniform("u_horizontal", 1);
-      blurProgram->draw();
-
-      // vertical blur
+      // Copy the depth buffer to a texture (while downsampling into the active blur subregion)
+      render::engine->setBlendMode(BlendMode::Disable);
       blurFrameBuffers[0]->bindForRendering();
-      blurProgram->setTextureFromBuffer("t_image", blurColorTextures[1].get());
-      blurProgram->setUniform("u_horizontal", 0);
-      blurProgram->draw();
-    }
+      render::engine->setViewportAndScissor(0, 0, blurW, blurH);
+      copyTexProgram->setUniform("u_texCoordMax", altDepthTexCoordMax);
+      copyTexProgram->draw();
 
-    // Restore original view matrix
-    view::viewMat = origViewMat;
-    view::overrideClipPlanes = false;
+      // == Blur
+
+      // Do some blur iterations (ends in same buffer it started in)
+      int nBlur = options::shadowBlurIters * render::engine->getSSAAFactor();
+      // int nBlur = 0;
+      blurProgram->setUniform("u_texCoordMax", blurTexCoordMax);
+      for (int i = 0; i < nBlur; i++) {
+        // horizontal blur
+        blurFrameBuffers[1]->bindForRendering();
+        render::engine->setViewportAndScissor(0, 0, blurW, blurH);
+        blurProgram->setTextureFromBuffer("t_image", blurColorTextures[0].get());
+        blurProgram->setUniform("u_horizontal", 1);
+        blurProgram->draw();
+
+        // vertical blur
+        blurFrameBuffers[0]->bindForRendering();
+        render::engine->setViewportAndScissor(0, 0, blurW, blurH);
+        blurProgram->setTextureFromBuffer("t_image", blurColorTextures[1].get());
+        blurProgram->setUniform("u_horizontal", 0);
+        blurProgram->draw();
+      }
+
+      // Restore original view matrix
+      view::viewMat = origViewMat;
+      view::overrideClipPlanes = false;
+    }
   }
 
   if (switchedFramebuffer) {
@@ -432,6 +466,8 @@ void GroundPlane::draw(bool isRedraw) {
       render::engine->setViewportAndScissor(static_cast<int>(viewport[0]), static_cast<int>(viewport[1]),
                                             static_cast<unsigned int>(viewport[2]),
                                             static_cast<unsigned int>(viewport[3]));
+    } else {
+      render::engine->disableScissor();
     }
     render::engine->applyTransparencySettings();
   }
