@@ -104,6 +104,7 @@ struct Context {
 
   // Viewports
   std::vector<view::ViewParameters> viewportParameters;
+  std::vector<view::ViewportLayer> viewportLayers;
   int activeViewportIndex = -1;
   bool viewportsShareNavigation = true;
 

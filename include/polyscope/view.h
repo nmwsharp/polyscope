@@ -277,6 +277,10 @@ glm::vec4 getViewportImGuiRect(int32_t viewportInd = -1);
 // Get a reference to the view parameters for a specific viewport, -1 means the active viewport.
 const view::ViewParameters& getViewportParameters(int32_t viewportInd = -1);
 
+// Partition of all viewports (preserving draw order) into consecutive layers of mutually non-overlapping viewports.
+// Updated automatically whenever viewport dimensions change.
+const std::vector<view::ViewportLayer>& getDisjointViewportLayers();
+
 // If true, all viewports share the same camera and rotation/translation/zoom etc applies
 // to all views simultaneously. If false, each viewport has its own independent camera and navigation state.
 bool getViewportsShareNavigation();
