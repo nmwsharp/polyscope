@@ -614,3 +614,55 @@ TEST_F(PolyscopeTest, GroundPlaneTest) {
 
   polyscope::removeAllStructures();
 }
+
+TEST_F(PolyscopeTest, ViewportAndWindowEdgeSizes) {
+
+  // NOTE: this is especially important for the shadow-only ground plane case, because it uses half-sized buffers 
+  // and has special logic for that.
+
+  auto psMesh = registerTriangleMesh();
+  std::tuple<int, int> origSize = polyscope::view::getWindowSize();
+  polyscope::GroundPlaneMode origGroundMode = polyscope::options::groundPlaneMode;
+  polyscope::TransparencyMode origTranspMode = polyscope::options::transparencyMode;
+
+  auto runModes = []() {
+    for (polyscope::GroundPlaneMode gpMode :
+         {polyscope::GroundPlaneMode::TileReflection, polyscope::GroundPlaneMode::ShadowOnly}) {
+      polyscope::options::groundPlaneMode = gpMode;
+      for (polyscope::TransparencyMode tMode : {polyscope::TransparencyMode::None, polyscope::TransparencyMode::Pretty}) {
+        polyscope::options::transparencyMode = tMode;
+        polyscope::show(1);
+      }
+    }
+  };
+
+  // Zero-sized and tiny odd window sizes (single viewport and 3x3 grid with odd/degenerate splits)
+  for (std::pair<int, int> sz : std::vector<std::pair<int, int>>{{0, 0}, {1, 1}, {3, 5}, {7, 9}}) {
+    polyscope::view::setWindowSize(sz.first, sz.second);
+    polyscope::view::createViewportGrid(1, 1);
+    runModes();
+    polyscope::view::createViewportGrid(3, 3);
+    runModes();
+  }
+
+  // Mix of 0-sized and small odd-offset viewports in an odd-sized window
+  polyscope::view::setWindowSize(15, 13);
+  polyscope::view::setNumViewports(3);
+  polyscope::view::activateViewport(0);
+  polyscope::view::setActiveViewportRelativeLocation(0.f, 0.f);
+  polyscope::view::setActiveViewportRelativeSize(0.f, 0.f);
+  polyscope::view::activateViewport(1);
+  polyscope::view::setActiveViewportRelativeLocation(0.f, 0.f);
+  polyscope::view::setActiveViewportRelativeSize(0.5f, 0.5f);
+  polyscope::view::activateViewport(2);
+  polyscope::view::setActiveViewportRelativeLocation(0.5f, 0.5f);
+  polyscope::view::setActiveViewportRelativeSize(0.5f, 0.5f);
+  runModes();
+
+  // Restore defaults
+  polyscope::options::groundPlaneMode = origGroundMode;
+  polyscope::options::transparencyMode = origTranspMode;
+  polyscope::view::setWindowSize(std::get<0>(origSize), std::get<1>(origSize));
+  polyscope::view::createViewportGrid(1, 1);
+  polyscope::removeAllStructures();
+}

@@ -1096,11 +1096,12 @@ void draw(bool withUI, bool withContextCallback) {
   // Draw the GUI
   if (withUI) {
     // render widgets
-    render::engine->bindDisplay();
-    for (WeakHandle<Widget> wHandle : state::widgets) {
-      if (wHandle.isValid()) {
-        Widget& w = wHandle.get();
-        w.draw();
+    if (render::engine->bindDisplay()) {
+      for (WeakHandle<Widget> wHandle : state::widgets) {
+        if (wHandle.isValid()) {
+          Widget& w = wHandle.get();
+          w.draw();
+        }
       }
     }
 

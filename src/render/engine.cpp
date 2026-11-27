@@ -498,9 +498,9 @@ void Engine::setViewportAndScissor(int startX, int startY, unsigned int sizeX, u
 void Engine::disableScissor() { scissorEnabled = false; }
 bool Engine::isScissorEnabled() const { return scissorEnabled; }
 
-void Engine::bindDisplay() {
+bool Engine::bindDisplay() {
   FrameBuffer& targetBuffer = getDisplayBuffer();
-  targetBuffer.bindForRendering();
+  return targetBuffer.bindForRendering();
 }
 
 
@@ -1339,13 +1339,10 @@ void Engine::renderScene(const SceneDrawCallbacks& callbacks) {
     // We render into the single full-window sceneBuffer using glViewport + glScissor, and composite each peel pass
     // into sceneBufferFinal in one fullscreen draw. Non-overlapping viewports are batched into the same layer so
     // each depth-peeling pass shares a single clear / composite / min-depth update across the whole layer.
-    // (ShadowOnly caches one shared shadow texture across passes via isRedraw, so don't batch multiple viewports
-    // into the same layer in that mode.)
-    bool canBatchLayer = (options::groundPlaneMode != GroundPlaneMode::ShadowOnly);
     std::vector<std::vector<int>> layers;
     for (int viewportInd = 0; viewportInd < numViewports; viewportInd++) {
       const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-      bool fitsInCurrentLayer = canBatchLayer && !layers.empty();
+      bool fitsInCurrentLayer = !layers.empty();
       if (fitsInCurrentLayer) {
         for (int existingInd : layers.back()) {
           if (viewportsOverlap(vp, view::getViewportParameters(existingInd))) {
@@ -1530,7 +1527,7 @@ void Engine::renderScene(const SceneDrawCallbacks& callbacks) {
 }
 
 void Engine::renderSceneToDisplay() {
-  bindDisplay();
+  if (!bindDisplay()) return;
   applyLightingTransform(sceneColorFinal);
 }
 
@@ -1576,7 +1573,7 @@ PickBufferSample Engine::renderAndReadPick(int xPos, int yPos, const std::functi
 
 void Engine::renderDebugPickToDisplay(const std::function<void()>& drawPickFn) {
   FrameBuffer& targetDisplay = getDisplayBuffer();
-  targetDisplay.bindForRendering();
+  if (!targetDisplay.bindForRendering()) return;
   targetDisplay.clearColor = {0., 0., 0.};
   targetDisplay.clearAlpha = 1.;
   targetDisplay.clear();

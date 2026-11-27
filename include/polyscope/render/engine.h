@@ -557,7 +557,7 @@ public:
   virtual bool isHeadless() { return false; }
 
   virtual void clearDisplay();
-  virtual void bindDisplay();
+  virtual bool bindDisplay();
   virtual void swapDisplayBuffers() = 0;
   void pushBindFramebufferForRendering(
       FrameBuffer& f); // push the existing rendering framebuffer on to a stack and bind to f for rendering
