@@ -288,22 +288,6 @@ void GroundPlane::draw(const std::function<void()>& drawStructuresFn, bool isRed
     groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
   };
 
-  /*
-  // For all effects which will use the alternate scene buffers, prepare them
-  if (options::groundPlaneMode == GroundPlaneMode::TileReflection ||
-      options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
-
-
-    sceneAltFrameBuffer->resize(factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
-    sceneAltFrameBuffer->setViewport(0, 0, factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
-    render::engine->setCurrentPixelScaling(factor / 2.);
-
-    sceneAltFrameBuffer->bindForRendering();
-    sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
-    sceneAltFrameBuffer->clear();
-  }
-  */
-
   bool switchedFramebuffer = false;
 
   // Render the scene to implement the mirror effect

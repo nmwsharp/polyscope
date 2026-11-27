@@ -516,9 +516,11 @@ void Engine::resizeScreenBuffersAndSetViewports() {
   unsigned int height = view::bufferHeight;
   displayBuffer->resize(width, height);
   displayBufferAlt->resize(width, height);
+  pickFramebuffer->resize(width, height);
 
   displayBuffer->setViewport(0, 0, width, height);
   displayBufferAlt->setViewport(0, 0, width, height);
+  pickFramebuffer->setViewport(0, 0, width, height);
 
   sceneBuffer->resize(ssaaFactor * width, ssaaFactor * height);
   sceneBufferFinal->resize(ssaaFactor * width, ssaaFactor * height);
@@ -1473,32 +1475,39 @@ void Engine::renderSceneToDisplay() {
   applyLightingTransform(sceneColorFinal);
 }
 
-bool Engine::renderPickInActiveViewport(int viewportW, int viewportH, const std::function<void()>& drawPickFn) {
+bool Engine::renderPickInActiveViewport(const std::function<void()>& drawPickFn) {
+  const view::ViewParameters& vp = view::getViewportParameters();
+  if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) return false;
+
   setDepthMode(DepthMode::Less);
   setBlendMode(BlendMode::Disable);
 
-  pickFramebuffer->resize(viewportW, viewportH);
-  pickFramebuffer->setViewport(0, 0, viewportW, viewportH);
   pickFramebuffer->clearColor = glm::vec3{0., 0., 0.};
+  pickFramebuffer->clearAlpha = 1.;
   if (!pickFramebuffer->bindForRendering()) return false;
+
+  int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
+  setViewportAndScissor(vp.viewportPosX, viewportPosYFromBottom, vp.viewportBufferWidth, vp.viewportBufferHeight);
   pickFramebuffer->clear();
 
   drawPickFn();
+  disableScissor();
   return true;
 }
 
 PickBufferSample Engine::renderAndReadPick(int xPos, int yPos, const std::function<void()>& drawPickFn) {
   PickBufferSample sample;
 
-  int viewportW = view::getActiveViewportBufferWidth();
-  int viewportH = view::getActiveViewportBufferHeight();
+  const view::ViewParameters& vp = view::getViewportParameters();
+  int viewportW = vp.viewportBufferWidth;
+  int viewportH = vp.viewportBufferHeight;
 
   // Be sure not to pick outside of buffer (-1 means render only, no readback)
   if (xPos < -1 || xPos >= viewportW || yPos < -1 || yPos >= viewportH) {
     return sample;
   }
 
-  if (!renderPickInActiveViewport(viewportW, viewportH, drawPickFn)) {
+  if (!renderPickInActiveViewport(drawPickFn)) {
     return sample;
   }
 
@@ -1506,9 +1515,14 @@ PickBufferSample Engine::renderAndReadPick(int xPos, int yPos, const std::functi
     return sample;
   }
 
-  int flippedY = viewportH - 1 - yPos;
-  sample.color = pickFramebuffer->readFloat4(xPos, flippedY);
-  sample.clipDepth = pickFramebuffer->readDepth(xPos, flippedY);
+  int globalX = vp.viewportPosX + xPos;
+  int globalFlippedY = view::bufferHeight - 1 - (vp.viewportPosY + yPos);
+  if (globalX < 0 || globalX >= view::bufferWidth || globalFlippedY < 0 || globalFlippedY >= view::bufferHeight) {
+    return sample;
+  }
+
+  sample.color = pickFramebuffer->readFloat4(globalX, globalFlippedY);
+  sample.clipDepth = pickFramebuffer->readDepth(globalX, globalFlippedY);
   sample.valid = true;
   return sample;
 }
@@ -1516,20 +1530,22 @@ PickBufferSample Engine::renderAndReadPick(int xPos, int yPos, const std::functi
 void Engine::renderDebugPickToDisplay(const std::function<void()>& drawPickFn) {
   FrameBuffer& targetDisplay = getDisplayBuffer();
   if (!targetDisplay.bindForRendering()) return;
-  targetDisplay.clearColor = {0., 0., 0.};
-  targetDisplay.clearAlpha = 1.;
-  targetDisplay.clear();
+
+  disableScissor();
+  pickFramebuffer->clearColor = {0., 0., 0.};
+  pickFramebuffer->clearAlpha = 1.;
+  if (!pickFramebuffer->bindForRendering()) return;
+  pickFramebuffer->clear();
 
   int savedActiveViewport = view::getActiveViewportIndex();
   for (int viewportInd = 0; viewportInd < view::getNumViewports(); viewportInd++) {
     view::activateViewport(viewportInd);
-    const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-    if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) continue;
-    if (!renderPickInActiveViewport(vp.viewportBufferWidth, vp.viewportBufferHeight, drawPickFn)) continue;
-    int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
-    pickFramebuffer->blitTo(&targetDisplay, vp.viewportPosX, viewportPosYFromBottom);
+    renderPickInActiveViewport(drawPickFn);
   }
   view::activateViewport(savedActiveViewport);
+
+  disableScissor();
+  pickFramebuffer->blitTo(&targetDisplay, 0, 0);
 }
 
 void Engine::showDebugTexturesInImGui() {
