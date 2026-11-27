@@ -455,6 +455,7 @@ public:
   void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) override;
   void setBackfaceCull(bool newVal) override;
   void setViewportAndScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY) override;
+  void setScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY) override;
   void disableScissor() override;
 
   // Cached currently bound GL program handle (0 = unknown / none)

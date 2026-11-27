@@ -389,10 +389,13 @@ void GroundPlane::draw(bool isRedraw) {
     view::overrideNearClipRelative = view::defaultNearClipRatio;
     view::overrideFarClipRelative = view::defaultFarClipRatio;
 
-    // Draw everything
+    // Draw everything (skip depth-peel filter: shadows come from all geometry and render into a viewport-sized
+    // buffer whose coordinates do not match the full-window t_minDepth texture)
     render::engine->setDepthMode(DepthMode::Less);
     render::engine->setBlendMode(BlendMode::Disable);
+    render::engine->setPeelEnabled(false);
     drawStructures();
+    render::engine->setPeelEnabled(true);
 
     // Copy the depth buffer to a texture (while upsampling)
     render::engine->setBlendMode(BlendMode::Disable);

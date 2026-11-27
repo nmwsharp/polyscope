@@ -726,6 +726,39 @@ void renderScene() {
     for (size_t iLayer = 0; iLayer < layers.size(); iLayer++) {
       const std::vector<int>& layer = layers[iLayer];
 
+      // Compute the bounding box of this layer's viewports (in top-down buffer coordinates) so that per-pass
+      // clear, compositePeel, and updateMinDepthTexture only touch this layer's pixels. Keeping glViewport
+      // full-window while scissoring preserves 1:1 UV sampling in fullscreen-quad shaders and avoids full-screen
+      // tile traffic when layers cannot be batched (e.g. overlapping insets or ShadowOnly).
+      int minX = view::bufferWidth, minY = view::bufferHeight;
+      int maxX = 0, maxY = 0;
+      for (int viewportInd : layer) {
+        const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
+        if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) continue;
+        minX = std::min(minX, vp.viewportPosX);
+        minY = std::min(minY, vp.viewportPosY);
+        maxX = std::max(maxX, vp.viewportPosX + vp.viewportBufferWidth);
+        maxY = std::max(maxY, vp.viewportPosY + vp.viewportBufferHeight);
+      }
+      minX = std::max(0, minX);
+      minY = std::max(0, minY);
+      maxX = std::min(static_cast<int>(view::bufferWidth), maxX);
+      maxY = std::min(static_cast<int>(view::bufferHeight), maxY);
+      if (minX >= maxX || minY >= maxY) {
+        for (int viewportInd : layer) {
+          view::activateViewport(viewportInd);
+          view::ensureViewValid();
+          view::updateFlight();
+        }
+        continue;
+      }
+
+      int layerX = ssaa * minX;
+      int layerYFromBottom = ssaa * (view::bufferHeight - maxY);
+      unsigned int layerW = static_cast<unsigned int>(ssaa * (maxX - minX));
+      unsigned int layerH = static_cast<unsigned int>(ssaa * (maxY - minY));
+      auto scissorToLayerBounds = [&]() { render::engine->setScissor(layerX, layerYFromBottom, layerW, layerH); };
+
       // For any viewport in a later layer that overlaps an earlier viewport, clear its region in sceneBufferFinal
       // so the foreground inset renders cleanly on top rather than being occluded by earlier viewports under AlphaUnder.
       if (iLayer > 0) {
@@ -746,18 +779,20 @@ void renderScene() {
       }
 
       render::engine->setDepthMode(DepthMode::Less); // we need depth to be enabled for the clear below to do anything
+      if (!render::engine->sceneDepthMinFrame->bindForRendering()) continue;
+      scissorToLayerBounds();
       render::engine->sceneDepthMinFrame->clear();
 
       for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
         bool isRedraw = iPass > 0;
         internal::renderPassIsRedraw = isRedraw;
 
-        render::engine->disableScissor();
         if (!render::engine->bindSceneBuffer()) {
           // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
           break;
         }
         render::engine->setDepthMode(DepthMode::Less);
+        scissorToLayerBounds();
         render::engine->clearSceneBuffer();
 
         for (int viewportInd : layer) {
@@ -783,19 +818,20 @@ void renderScene() {
           drawStructuresDelayed();
         }
 
-        // Composite the result of this pass in to the result buffer (regions outside this layer's viewports
-        // are (0, 0, 0, 0) in sceneColor, which is a no-op under AlphaUnder).
-        render::engine->disableScissor();
+        // Composite the result of this pass in to the result buffer (full-window glViewport with layer-bounds
+        // scissor; gaps inside the layer bounds are (0, 0, 0, 0) in sceneColor, which is a no-op under AlphaUnder).
         render::engine->sceneBufferFinal->bindForRendering();
+        scissorToLayerBounds();
         render::engine->setDepthMode(DepthMode::Disable);
         render::engine->setBlendMode(BlendMode::AlphaUnder);
         render::engine->compositePeel->setTextureFromBuffer("t_image", render::engine->sceneColor.get());
         render::engine->compositePeel->draw();
 
-        // Update the minimum depth texture
+        // Update the minimum depth texture (also scissored to the layer bounds)
         render::engine->updateMinDepthTexture();
       }
 
+      render::engine->disableScissor();
       internal::renderPassIsRedraw = false; // reset to usual value
     }
 
