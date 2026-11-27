@@ -267,6 +267,7 @@ const ShaderStageSpecification GROUND_PLANE_SHADOW_FRAG_SHADER = {
     { // uniforms
       {"u_lengthScale", RenderDataType::Float},
       {"u_viewport", RenderDataType::Vector4Float},
+      {"u_texCoordMin", RenderDataType::Vector2Float},
       {"u_texCoordMax", RenderDataType::Vector2Float},
       {"u_shadowDarkness", RenderDataType::Float},
       {"u_cameraHeight", RenderDataType::Float},
@@ -290,6 +291,7 @@ R"(
       uniform sampler2D t_shadow;
       uniform mat4 u_viewMatrix;
       uniform vec4 u_viewport;
+      uniform vec2 u_texCoordMin;
       uniform vec2 u_texCoordMax;
       uniform float u_lengthScale;
       uniform float u_shadowDarkness;
@@ -308,9 +310,9 @@ R"(
 
         vec2 localUV = (gl_FragCoord.xy - u_viewport.xy) / u_viewport.zw;
         vec2 texel = 1.0 / vec2(textureSize(t_shadow, 0));
-        vec2 uvMin = 0.5 * texel;
+        vec2 uvMin = u_texCoordMin + 0.5 * texel;
         vec2 uvMax = max(uvMin, u_texCoordMax - 0.5 * texel);
-        vec2 screenCoords = clamp(localUV * u_texCoordMax, uvMin, uvMax);
+        vec2 screenCoords = clamp(mix(u_texCoordMin, u_texCoordMax, localUV), uvMin, uvMax);
         float shadowVal = texture(t_shadow, screenCoords).r;
         shadowVal = pow(clamp(shadowVal, 0., 1.), 0.25);
 

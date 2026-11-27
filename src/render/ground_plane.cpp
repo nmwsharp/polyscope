@@ -241,6 +241,7 @@ void GroundPlane::draw(const std::function<void()>& drawStructuresFn, bool isRed
   glm::vec4 viewport = render::engine->getCurrentViewport();
   bool hadScissor = render::engine->isScissorEnabled();
   int factor = render::engine->getSSAAFactor();
+  glm::vec2 altTexCoordMin{0.f, 0.f};
   glm::vec2 altTexCoordMax{1.f, 1.f};
 
   auto setUniforms = [&]() {
@@ -264,6 +265,7 @@ void GroundPlane::draw(const std::function<void()>& drawStructuresFn, bool isRed
     }
 
     if (options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
+      groundPlaneProgram->setUniform("u_texCoordMin", altTexCoordMin);
       groundPlaneProgram->setUniform("u_shadowDarkness", options::shadowDarkness);
     }
 
@@ -370,9 +372,10 @@ void GroundPlane::draw(const std::function<void()>& drawStructuresFn, bool isRed
 
   // Render the scene to implement the shadow effect
   if (options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
-    // Keep the alternate and blur buffers at fixed window-proportional sizes (allocated once per window/SSAA size)
-    // and render/blur each viewport in its (0, 0, altW/blurW, altH/blurH) subregion so differing viewport sizes never
-    // reallocate.
+    // Keep the alternate and blur buffers at fixed window-proportional sizes (allocated once per window/SSAA size).
+    // Each viewport's blurred shadow is stored in its own viewport-offset subregion of blurFrameBuffers[0..1] using
+    // ceil(start/2)..floor(end/2) bounds, which guarantees disjoint half-res regions for non-overlapping viewports
+    // even on odd pixel boundaries (allowing all non-overlapping viewports to batch across depth-peeling passes).
     unsigned int fullAltW = static_cast<unsigned int>(std::max(1, factor * view::bufferWidth));
     unsigned int fullAltH = static_cast<unsigned int>(std::max(1, factor * view::bufferHeight));
     unsigned int fullBlurW = std::max(1u, fullAltW / 2);
@@ -382,11 +385,33 @@ void GroundPlane::draw(const std::function<void()>& drawStructuresFn, bool isRed
         std::min(fullAltW, static_cast<unsigned int>(std::max(1, factor * view::getActiveViewportBufferWidth())));
     unsigned int altH =
         std::min(fullAltH, static_cast<unsigned int>(std::max(1, factor * view::getActiveViewportBufferHeight())));
-    unsigned int blurW = std::min(fullBlurW, std::max(1u, altW / 2));
-    unsigned int blurH = std::min(fullBlurH, std::max(1u, altH / 2));
+
+    // calculate portion of full-size alt buffer that current viewport covers
+    // this logic is a bit complicated because the alt shadow buffer is half size, so we need to
+    // carefully handle odd-sized viewports correctly
+    int vpX0 = std::max(0, std::min(static_cast<int>(fullAltW), static_cast<int>(viewport[0])));
+    int vpY0 = std::max(0, std::min(static_cast<int>(fullAltH), static_cast<int>(viewport[1])));
+    int vpX1 = std::max(vpX0, std::min(static_cast<int>(fullAltW), static_cast<int>(viewport[0] + viewport[2])));
+    int vpY1 = std::max(vpY0, std::min(static_cast<int>(fullAltH), static_cast<int>(viewport[1] + viewport[3])));
+    int blurX0 = (vpX0 + 1) / 2;
+    int blurX1 = vpX1 / 2;
+    if (blurX1 <= blurX0) {
+      blurX0 = std::min(vpX0 / 2, static_cast<int>(fullBlurW) - 1);
+      blurX1 = blurX0 + 1;
+    }
+    int blurY0 = (vpY0 + 1) / 2;
+    int blurY1 = vpY1 / 2;
+    if (blurY1 <= blurY0) {
+      blurY0 = std::min(vpY0 / 2, static_cast<int>(fullBlurH) - 1);
+      blurY1 = blurY0 + 1;
+    }
+    unsigned int blurW = static_cast<unsigned int>(blurX1 - blurX0);
+    unsigned int blurH = static_cast<unsigned int>(blurY1 - blurY0);
 
     glm::vec2 altDepthTexCoordMax{static_cast<float>(altW) / fullAltW, static_cast<float>(altH) / fullAltH};
-    glm::vec2 blurTexCoordMax{static_cast<float>(blurW) / fullBlurW, static_cast<float>(blurH) / fullBlurH};
+    glm::vec2 blurTexCoordMin{static_cast<float>(blurX0) / fullBlurW, static_cast<float>(blurY0) / fullBlurH};
+    glm::vec2 blurTexCoordMax{static_cast<float>(blurX1) / fullBlurW, static_cast<float>(blurY1) / fullBlurH};
+    altTexCoordMin = blurTexCoordMin;
     altTexCoordMax = blurTexCoordMax;
 
     if (!isRedraw) {
@@ -425,10 +450,10 @@ void GroundPlane::draw(const std::function<void()>& drawStructuresFn, bool isRed
       drawStructuresFn();
       render::engine->setPeelEnabled(true);
 
-      // Copy the depth buffer to a texture (while downsampling into the active blur subregion)
+      // Copy the depth buffer to a texture (while downsampling into this viewport's blur subregion)
       render::engine->setBlendMode(BlendMode::Disable);
       blurFrameBuffers[0]->bindForRendering();
-      render::engine->setViewportAndScissor(0, 0, blurW, blurH);
+      render::engine->setViewportAndScissor(blurX0, blurY0, blurW, blurH);
       copyTexProgram->setUniform("u_texCoordMax", altDepthTexCoordMax);
       copyTexProgram->draw();
 
@@ -437,18 +462,19 @@ void GroundPlane::draw(const std::function<void()>& drawStructuresFn, bool isRed
       // Do some blur iterations (ends in same buffer it started in)
       int nBlur = options::shadowBlurIters * render::engine->getSSAAFactor();
       // int nBlur = 0;
+      blurProgram->setUniform("u_texCoordMin", blurTexCoordMin);
       blurProgram->setUniform("u_texCoordMax", blurTexCoordMax);
       for (int i = 0; i < nBlur; i++) {
         // horizontal blur
         blurFrameBuffers[1]->bindForRendering();
-        render::engine->setViewportAndScissor(0, 0, blurW, blurH);
+        render::engine->setViewportAndScissor(blurX0, blurY0, blurW, blurH);
         blurProgram->setTextureFromBuffer("t_image", blurColorTextures[0].get());
         blurProgram->setUniform("u_horizontal", 1);
         blurProgram->draw();
 
         // vertical blur
         blurFrameBuffers[0]->bindForRendering();
-        render::engine->setViewportAndScissor(0, 0, blurW, blurH);
+        render::engine->setViewportAndScissor(blurX0, blurY0, blurW, blurH);
         blurProgram->setTextureFromBuffer("t_image", blurColorTextures[1].get());
         blurProgram->setUniform("u_horizontal", 0);
         blurProgram->draw();
