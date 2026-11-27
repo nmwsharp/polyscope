@@ -1213,20 +1213,11 @@ GLCompiledProgram::GLCompiledProgram(const std::vector<ShaderStageSpecification>
   checkGLError();
 }
 
-inline void useGLProgram(ProgramHandle h) {
-  auto* glEng = static_cast<GLEngine*>(render::engine);
-  if (glEng->boundProgramHandle != h) {
-    glUseProgram(h);
-    glEng->boundProgramHandle = h;
-  }
-}
+inline void useGLProgram(ProgramHandle h) { static_cast<GLEngine*>(render::engine)->useProgram(h); }
 
 GLCompiledProgram::~GLCompiledProgram() {
   if (render::engine) {
-    auto* glEng = static_cast<GLEngine*>(render::engine);
-    if (glEng->boundProgramHandle == programHandle) {
-      glEng->boundProgramHandle = 0;
-    }
+    static_cast<GLEngine*>(render::engine)->invalidateBoundProgram(programHandle);
   }
   glDeleteProgram(programHandle);
 }
@@ -2537,6 +2528,19 @@ std::vector<unsigned char> GLEngine::readDisplayBuffer() {
   return buff;
 }
 
+
+void GLEngine::useProgram(ProgramHandle h) {
+  if (boundProgramHandle != h) {
+    glUseProgram(h);
+    boundProgramHandle = h;
+  }
+}
+
+void GLEngine::invalidateBoundProgram(ProgramHandle h) {
+  if (h == 0 || boundProgramHandle == h) {
+    boundProgramHandle = 0;
+  }
+}
 
 void GLEngine::setScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
   glEnable(GL_SCISSOR_TEST);

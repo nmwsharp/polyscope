@@ -458,8 +458,9 @@ public:
   void setScissor(int startX, int startY, unsigned int sizeX, unsigned int sizeY) override;
   void disableScissor() override;
 
-  // Cached currently bound GL program handle (0 = unknown / none)
-  ProgramHandle boundProgramHandle = 0;
+  // Program binding cache helpers (avoids redundant glUseProgram calls)
+  void useProgram(ProgramHandle h);
+  void invalidateBoundProgram(ProgramHandle h = 0); // 0 clears unconditionally
 
 
   // === Factory methods
@@ -507,6 +508,9 @@ public:
   virtual void setFrontFaceCCW(bool newVal) override;
 
 protected:
+  // Cached currently bound GL program handle (0 = unknown / none)
+  ProgramHandle boundProgramHandle = 0;
+
   // Helpers
   virtual void freeAllOwnedResources() override;
   virtual void createSlicePlaneFliterRule(std::string name) override;
