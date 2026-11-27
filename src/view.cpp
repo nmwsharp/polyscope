@@ -1838,6 +1838,7 @@ void createInitialViewport() {
 
 void clearViewports() {
   state::globalContext.viewportParameters.clear();
+  state::globalContext.viewportLayers.clear();
   activeViewportIndex = -1;
 }
 
@@ -1848,9 +1849,27 @@ void validateViewports() {
         "wrong order.");
 }
 
+const std::vector<view::ViewportLayer>& getDisjointViewportLayers() { return state::globalContext.viewportLayers; }
+
+namespace {
+
+bool viewportsOverlap(const ViewParameters& a, const ViewParameters& b) {
+  if (a.viewportBufferWidth <= 0 || a.viewportBufferHeight <= 0 || b.viewportBufferWidth <= 0 ||
+      b.viewportBufferHeight <= 0) {
+    return false;
+  }
+  return a.viewportPosX < b.viewportPosX + b.viewportBufferWidth &&
+         b.viewportPosX < a.viewportPosX + a.viewportBufferWidth &&
+         a.viewportPosY < b.viewportPosY + b.viewportBufferHeight &&
+         b.viewportPosY < a.viewportPosY + a.viewportBufferHeight;
+}
+
+} // namespace
+
 void updateViewportDimensions() {
   packCurrentViewportParametersToIndex(activeViewportIndex); // active values are duplicated
-  for (int32_t iV = 0; iV < getNumViewports(); iV++) {
+  int32_t numViewports = getNumViewports();
+  for (int32_t iV = 0; iV < numViewports; iV++) {
     ViewParameters& vp = state::globalContext.viewportParameters[iV];
 
     // Compute pos and size by rounding both edges independently in buffer space, so that adjacent viewports sharing
@@ -1866,7 +1885,57 @@ void updateViewportDimensions() {
     float scaleY = (view::bufferHeight > 0) ? static_cast<float>(view::windowHeight) / view::bufferHeight : 1.0f;
     vp.viewportWindowWidth = vp.viewportBufferWidth * scaleX;
     vp.viewportWindowHeight = vp.viewportBufferHeight * scaleY;
+    vp.overlapsEarlierViewport = false;
   }
+
+  // Partition viewports (preserving draw order) into consecutive layers of mutually non-overlapping viewports,
+  // and record whether each viewport overlaps any earlier viewport and each layer's clamped buffer bounding box.
+  // (We'll use this info during the rendering passes to share work between viewports when they don't overlap)
+  std::vector<ViewportLayer>& layers = state::globalContext.viewportLayers;
+  layers.clear();
+  for (int32_t iV = 0; iV < numViewports; iV++) {
+    ViewParameters& vp = state::globalContext.viewportParameters[iV];
+    for (int32_t jV = 0; jV < iV; jV++) {
+      if (viewportsOverlap(vp, state::globalContext.viewportParameters[jV])) {
+        vp.overlapsEarlierViewport = true;
+        break;
+      }
+    }
+
+    bool fitsInCurrentLayer = !layers.empty();
+    if (fitsInCurrentLayer) {
+      for (int existingInd : layers.back().viewportIndices) {
+        if (viewportsOverlap(vp, state::globalContext.viewportParameters[existingInd])) {
+          fitsInCurrentLayer = false;
+          break;
+        }
+      }
+    }
+    if (!fitsInCurrentLayer) {
+      layers.emplace_back();
+    }
+    layers.back().viewportIndices.push_back(iV);
+  }
+
+  for (ViewportLayer& layer : layers) {
+    int minX = view::bufferWidth;
+    int minY = view::bufferHeight;
+    int maxX = 0;
+    int maxY = 0;
+    for (int viewportInd : layer.viewportIndices) {
+      const ViewParameters& vp = state::globalContext.viewportParameters[viewportInd];
+      if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) continue;
+      minX = std::min(minX, vp.viewportPosX);
+      minY = std::min(minY, vp.viewportPosY);
+      maxX = std::max(maxX, vp.viewportPosX + vp.viewportBufferWidth);
+      maxY = std::max(maxY, vp.viewportPosY + vp.viewportBufferHeight);
+    }
+    layer.minX = std::max(0, minX);
+    layer.minY = std::max(0, minY);
+    layer.maxX = std::min(view::bufferWidth, maxX);
+    layer.maxY = std::min(view::bufferHeight, maxY);
+  }
+
   unpackCurrentViewportParametersFromActive();
 }
 

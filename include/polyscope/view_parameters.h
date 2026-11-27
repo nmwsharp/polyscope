@@ -3,6 +3,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 
 #include "polyscope/types.h"
 
@@ -59,6 +60,18 @@ struct ViewParameters {
   int viewportBufferHeight;   // viewport dimensions in buffer inds (integer buffer pixels)
   float viewportWindowWidth;  // viewport dimensions in screenCoords (floats, as in ImGui etc)
   float viewportWindowHeight; // viewport dimensions in screenCoords (floats, as in ImGui etc)
+  bool overlapsEarlierViewport; // true if this viewport overlaps any lower-indexed viewport
+};
+
+// A group of mutually non-overlapping viewports that can be rendered together in one pass, along with their
+// clamped union bounding box in top-down buffer coordinates.
+struct ViewportLayer {
+  std::vector<int> viewportIndices;
+  int minX = 0;
+  int minY = 0;
+  int maxX = 0;
+  int maxY = 0;
+  bool hasArea() const { return minX < maxX && minY < maxY; }
 };
 
 } // namespace view

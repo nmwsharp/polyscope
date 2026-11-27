@@ -1215,29 +1215,6 @@ void Engine::preserveResourceUntilImguiFrameCompletes(std::shared_ptr<TextureBuf
 
 void Engine::clearResourcesPreservedForImguiFrame() { resourcesPreservedForImGuiFrame.clear(); }
 
-namespace {
-
-bool viewportsOverlap(const view::ViewParameters& a, const view::ViewParameters& b) {
-  if (a.viewportBufferWidth <= 0 || a.viewportBufferHeight <= 0 || b.viewportBufferWidth <= 0 ||
-      b.viewportBufferHeight <= 0) {
-    return false;
-  }
-  return a.viewportPosX < b.viewportPosX + b.viewportBufferWidth &&
-         b.viewportPosX < a.viewportPosX + a.viewportBufferWidth &&
-         a.viewportPosY < b.viewportPosY + b.viewportBufferHeight &&
-         b.viewportPosY < a.viewportPosY + a.viewportBufferHeight;
-}
-
-bool viewportOverlapsEarlier(int viewportInd) {
-  const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-  for (int i = 0; i < viewportInd; i++) {
-    if (viewportsOverlap(vp, view::getViewportParameters(i))) return true;
-  }
-  return false;
-}
-
-} // namespace
-
 void Engine::updateMinDepthTexture() {
   sceneDepthMinFrame->bindForRendering();
   setDepthMode(DepthMode::Greater);
@@ -1337,25 +1314,9 @@ void Engine::renderScene(const SceneDrawCallbacks& callbacks) {
   if (transparencyMode == TransparencyMode::Pretty) {
     // Special depth peeling case: multiple render passes.
     // We render into the single full-window sceneBuffer using glViewport + glScissor, and composite each peel pass
-    // into sceneBufferFinal in one fullscreen draw. Non-overlapping viewports are batched into the same layer so
-    // each depth-peeling pass shares a single clear / composite / min-depth update across the whole layer.
-    std::vector<std::vector<int>> layers;
-    for (int viewportInd = 0; viewportInd < numViewports; viewportInd++) {
-      const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-      bool fitsInCurrentLayer = !layers.empty();
-      if (fitsInCurrentLayer) {
-        for (int existingInd : layers.back()) {
-          if (viewportsOverlap(vp, view::getViewportParameters(existingInd))) {
-            fitsInCurrentLayer = false;
-            break;
-          }
-        }
-      }
-      if (!fitsInCurrentLayer) {
-        layers.emplace_back();
-      }
-      layers.back().push_back(viewportInd);
-    }
+    // into sceneBufferFinal in one fullscreen draw. Non-overlapping viewports are pre-batched into layers in view.cpp
+    // so each depth-peeling pass shares a single clear / composite / min-depth update across the whole layer.
+    const std::vector<view::ViewportLayer>& layers = view::getDisjointViewportLayers();
 
     // Clear the final buffer explicitly since we will gradually composite in to it rather than just blitting directly
     // as in normal rendering.
@@ -1368,28 +1329,9 @@ void Engine::renderScene(const SceneDrawCallbacks& callbacks) {
     sceneBuffer->clearAlpha = 0.;
 
     for (size_t iLayer = 0; iLayer < layers.size(); iLayer++) {
-      const std::vector<int>& layer = layers[iLayer];
-
-      // Compute the bounding box of this layer's viewports (in top-down buffer coordinates) so that per-pass
-      // clear, compositePeel, and updateMinDepthTexture only touch this layer's pixels. Keeping glViewport
-      // full-window while scissoring preserves 1:1 UV sampling in fullscreen-quad shaders and avoids full-screen
-      // tile traffic when layers cannot be batched (e.g. overlapping insets or ShadowOnly).
-      int minX = view::bufferWidth, minY = view::bufferHeight;
-      int maxX = 0, maxY = 0;
-      for (int viewportInd : layer) {
-        const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-        if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) continue;
-        minX = std::min(minX, vp.viewportPosX);
-        minY = std::min(minY, vp.viewportPosY);
-        maxX = std::max(maxX, vp.viewportPosX + vp.viewportBufferWidth);
-        maxY = std::max(maxY, vp.viewportPosY + vp.viewportBufferHeight);
-      }
-      minX = std::max(0, minX);
-      minY = std::max(0, minY);
-      maxX = std::min(static_cast<int>(view::bufferWidth), maxX);
-      maxY = std::min(static_cast<int>(view::bufferHeight), maxY);
-      if (minX >= maxX || minY >= maxY) {
-        for (int viewportInd : layer) {
+      const view::ViewportLayer& layer = layers[iLayer];
+      if (!layer.hasArea()) {
+        for (int viewportInd : layer.viewportIndices) {
           view::activateViewport(viewportInd);
           view::ensureViewValid();
           view::updateFlight();
@@ -1397,20 +1339,20 @@ void Engine::renderScene(const SceneDrawCallbacks& callbacks) {
         continue;
       }
 
-      int layerX = ssaa * minX;
-      int layerYFromBottom = ssaa * (view::bufferHeight - maxY);
-      unsigned int layerW = static_cast<unsigned int>(ssaa * (maxX - minX));
-      unsigned int layerH = static_cast<unsigned int>(ssaa * (maxY - minY));
+      // Performance optimization: scissor per-pass clears, compositing, and depth copies to this layer's bounds.
+      int layerX = ssaa * layer.minX;
+      int layerYFromBottom = ssaa * (view::bufferHeight - layer.maxY);
+      unsigned int layerW = static_cast<unsigned int>(ssaa * (layer.maxX - layer.minX));
+      unsigned int layerH = static_cast<unsigned int>(ssaa * (layer.maxY - layer.minY));
       auto scissorToLayerBounds = [&]() { setScissor(layerX, layerYFromBottom, layerW, layerH); };
 
       // For any viewport in a later layer that overlaps an earlier viewport, clear its region in sceneBufferFinal
       // so the foreground inset renders cleanly on top rather than being occluded by earlier viewports under AlphaUnder.
       if (iLayer > 0) {
         bool boundFinal = false;
-        for (int viewportInd : layer) {
-          if (!viewportOverlapsEarlier(viewportInd)) continue;
+        for (int viewportInd : layer.viewportIndices) {
           const view::ViewParameters& vp = view::getViewportParameters(viewportInd);
-          if (vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) continue;
+          if (!vp.overlapsEarlierViewport || vp.viewportBufferWidth <= 0 || vp.viewportBufferHeight <= 0) continue;
           if (!boundFinal) {
             if (!sceneBufferFinal->bindForRendering()) break;
             boundFinal = true;
@@ -1439,7 +1381,7 @@ void Engine::renderScene(const SceneDrawCallbacks& callbacks) {
         scissorToLayerBounds();
         sceneBuffer->clear();
 
-        for (int viewportInd : layer) {
+        for (int viewportInd : layer.viewportIndices) {
           view::activateViewport(viewportInd);
           if (!isRedraw) {
             view::ensureViewValid();
@@ -1500,7 +1442,7 @@ void Engine::renderScene(const SceneDrawCallbacks& callbacks) {
         if (!setViewportScissor(vp)) continue;
 
         // If this viewport overlaps any earlier viewport, clear only its scissored region so it renders cleanly on top.
-        if (viewportOverlapsEarlier(viewportInd)) {
+        if (vp.overlapsEarlierViewport) {
           setDepthMode(DepthMode::Less);
           sceneBuffer->clear();
         }
