@@ -54,8 +54,7 @@ static PickResult pickAtActiveViewportBufferInds(glm::ivec2 bufferInds) {
   PickResult result;
 
   // Render pick buffer and query both color (encoded index) and clip-space depth
-  render::PickBufferSample sample =
-      render::engine->renderAndReadPick(bufferInds.x, bufferInds.y, drawStructuresPick);
+  render::PickBufferSample sample = render::engine->renderAndReadPick(bufferInds.x, bufferInds.y, drawStructuresPick);
 
   std::tuple<Structure*, Quantity*, uint64_t> rawPickResult{nullptr, nullptr, 0};
   float clipDepth = 1.0f;

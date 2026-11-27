@@ -399,7 +399,8 @@ void GroundPlane::draw(const std::function<void()>& drawStructuresFn, bool isRed
     altTexCoordMax = blurTexCoordMax;
 
     if (!isRedraw) {
-      // Ensure blur buffers are the right shape (copyTexProgram & blurProgram overwrite every pixel with BlendMode::Disable)
+      // Ensure blur buffers are the right shape (copyTexProgram & blurProgram overwrite every pixel with
+      // BlendMode::Disable)
       for (int i = 0; i < 2; i++) {
         blurFrameBuffers[i]->resize(fullBlurW, fullBlurH);
         blurFrameBuffers[i]->setViewport(0, 0, fullBlurW, fullBlurH);
