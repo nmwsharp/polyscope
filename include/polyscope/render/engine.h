@@ -604,6 +604,7 @@ public:
 
   // Render pick geometry for the active viewport and read back color + clip-space depth at local buffer coords.
   // Passing xPos == -1 or yPos == -1 renders the pick buffer without reading back a pixel.
+  // NOTE: end users should call the functions in pick.h, not call this directly!
   PickBufferSample renderAndReadPick(int xPos, int yPos, const std::function<void()>& drawPickFn);
 
   void showDebugTexturesInImGui();
@@ -794,7 +795,7 @@ protected:
   // Internal pipeline pass helpers
   void updateMinDepthTexture();
   void applyLightingTransform(std::shared_ptr<TextureBuffer>& texture);
-  bool renderPickInActiveViewport(int viewportW, int viewportH, const std::function<void()>& drawPickFn);
+  bool renderPickInActiveViewport(const std::function<void()>& drawPickFn);
 
   // ImGui/fonts
   bool imguiInitialized = false;
