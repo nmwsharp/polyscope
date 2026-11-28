@@ -1702,9 +1702,9 @@ SurfaceScalarQuantity& SurfaceMesh::resolveTransparencyQuantity() {
 
 void SurfaceMesh::markEdgesAsUsed() {
   if (edgesHaveBeenUsed) return;
-  edgesHaveBeenUsed = true;
   // immediately compute edge-related connectivity info, and also repopulate the pick buffer so edges can be picked
-  computeTriangleAllEdgeInds();
+  computeTriangleAllEdgeInds(); // may throw, so only set the flag once it has succeeded
+  edgesHaveBeenUsed = true;
   pickProgram.reset();
 }
 
