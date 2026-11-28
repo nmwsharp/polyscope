@@ -77,11 +77,21 @@ void SparseVolumeGrid::checkForDuplicateCells() {
     if (a.y != b.y) return a.y < b.y;
     return a.z < b.z;
   });
+
+  // count all of the duplicates first, so we report a single error rather than one per repeated cell
+  size_t nRepeated = 0;
+  glm::ivec3 firstRepeated{0, 0, 0};
   for (size_t i = 1; i < sortedCells.size(); i++) {
     if (sortedCells[i] == sortedCells[i - 1]) {
-      error("[Polyscope] sparse volume grid " + name + " has repeated cell (" + std::to_string(sortedCells[i].x) + "," +
-            std::to_string(sortedCells[i].y) + "," + std::to_string(sortedCells[i].z) + ")");
+      if (nRepeated == 0) firstRepeated = sortedCells[i];
+      nRepeated++;
     }
+  }
+
+  if (nRepeated > 0) {
+    error("sparse volume grid " + name + " has " + std::to_string(nRepeated) + " repeated cell(s), for example (" +
+          std::to_string(firstRepeated.x) + "," + std::to_string(firstRepeated.y) + "," +
+          std::to_string(firstRepeated.z) + ")");
   }
 }
 
