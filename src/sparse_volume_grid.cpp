@@ -600,7 +600,7 @@ SparseVolumeGridPickResult SparseVolumeGrid::interpretPickResult(const PickResul
     int cornerDx = fractional.x > 0.5f ? 1 : 0;
     int cornerDy = fractional.y > 0.5f ? 1 : 0;
     int cornerDz = fractional.z > 0.5f ? 1 : 0;
-    glm::ivec3 nodeInd3(cellInd3.x + cornerDx - 1, cellInd3.y + cornerDy - 1, cellInd3.z + cornerDz - 1);
+    glm::ivec3 nodeInd3(cellInd3.x + cornerDx, cellInd3.y + cornerDy, cellInd3.z + cornerDz);
 
     result.elementType = SparseVolumeGridElement::NODE;
     result.nodeIndex = nodeInd3;
@@ -687,7 +687,7 @@ void SparseVolumeGrid::buildNodeInfoGUI(const SparseVolumeGridPickResult& result
     ImGui::TextUnformatted(("Node #" + std::to_string(canonicalInd)).c_str());
   }
 
-  glm::vec3 nodePos = origin + glm::vec3(nodeInd3 + 1) * gridCellWidth;
+  glm::vec3 nodePos = origin + glm::vec3(nodeInd3) * gridCellWidth;
   std::stringstream buffer;
   buffer << nodePos;
   ImGui::TextUnformatted(("Position: " + buffer.str()).c_str());
