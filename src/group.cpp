@@ -109,7 +109,6 @@ void Group::unparent() {
 
   if (parentGroup.isValid()) {
     Group& parent = parentGroup.get();
-    parent.buildUI();
     parent.removeChildGroup(*this);
   }
 
