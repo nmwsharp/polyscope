@@ -471,7 +471,7 @@ void Structure::removeQuantity(std::string name, bool errorIfAbsent) {
   bool floatingQuantityExists = floatingQuantities.find(name) != floatingQuantities.end();
 
   if (errorIfAbsent && !(quantityExists || floatingQuantityExists)) {
-    exception("No quantity named " + name + " added to structure " + name);
+    exception("No quantity named " + name + " added to structure " + this->name);
     return;
   }
 
