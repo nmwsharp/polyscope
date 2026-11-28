@@ -912,7 +912,7 @@ void buildStructureGui() {
   // groups have an option to hide structures from this list; assemble a list of structures to skip
   std::unordered_set<Structure*> structuresToSkip;
   for (auto& x : state::groups) {
-    x.second->appendStructuresToSkip(structuresToSkip);
+    x.second->collectHiddenStructures(structuresToSkip);
   }
 
 

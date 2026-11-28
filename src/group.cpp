@@ -121,7 +121,7 @@ void Group::addChildGroup(Group& newChild) {
   // if child is already in a group, remove it from that group
   newChild.unparent();
 
-  if (getTopLevelGrandparent() == &newChild) {
+  if (getRootAncestor() == &newChild) {
     exception("Attempted to make group " + newChild.name + " a child of " + name +
               ", but this would create a cycle (group " + name + " is already a descendant of " + newChild.name + ")");
     return;
@@ -164,7 +164,7 @@ void Group::removeChildStructure(Structure& child) {
                            childrenStructures.end());
 }
 
-Group* Group::getTopLevelGrandparent() {
+Group* Group::getRootAncestor() {
   cullExpiredChildren();
   Group* current = this;
   while (current->parentGroup.isValid()) {
@@ -258,24 +258,24 @@ void Group::cullExpiredChildren() {
                            childrenStructures.end());
 }
 
-void Group::appendStructuresToSkip(std::unordered_set<Structure*>& skipSet) {
+void Group::collectHiddenStructures(std::unordered_set<Structure*>& hiddenStructures) {
   if (getHideDescendantsFromStructureLists()) {
-    appendAllDescendants(skipSet);
+    collectDescendantStructures(hiddenStructures);
   }
 }
 
-void Group::appendAllDescendants(std::unordered_set<Structure*>& skipSet) {
+void Group::collectDescendantStructures(std::unordered_set<Structure*>& structures) {
   for (WeakHandle<Group>& childWeak : childrenGroups) {
     if (childWeak.isValid()) {
       Group& child = childWeak.get();
-      child.appendAllDescendants(skipSet);
+      child.collectDescendantStructures(structures);
     }
   }
 
   for (WeakHandle<Structure>& childWeak : childrenStructures) {
     if (childWeak.isValid()) {
       Structure& child = childWeak.get();
-      skipSet.insert(&child);
+      structures.insert(&child);
     }
   }
 }
@@ -314,5 +314,9 @@ bool Group::isRootGroup() { return !parentGroup.isValid(); }
 std::string Group::niceName() { return name; }
 
 std::string Group::uniqueName() { return "Group#" + name + "#"; }
+
+// === Deprecated
+
+Group* Group::getTopLevelGrandparent() { return getRootAncestor(); }
 
 } // namespace polyscope

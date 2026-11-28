@@ -36,19 +36,22 @@ public:
   void addChildStructure(Structure& newChild);
   void removeChildGroup(Group& child);
   void removeChildStructure(Structure& child);
-  void unparent();
+  void unparent(); // remove this group from its containing parent group, if it has one
 
-  bool isRootGroup();
-  Group* getTopLevelGrandparent();
-  void appendStructuresToSkip(std::unordered_set<Structure*>& skipSet);
-  void appendAllDescendants(std::unordered_set<Structure*>& skipSet);
+  bool isRootGroup();       // is this group a child of some other group? if not it's a root
+  Group* getRootAncestor(); // the root of the group-tree containing this group, which may be this group itself
+  // If this group hides its descendants from the structure lists, adds all of them to the set
+  void collectHiddenStructures(std::unordered_set<Structure*>& hiddenStructures);
 
   std::string niceName();
   std::string uniqueName();
 
+  // Show the details of child groups and structures under this group in the UI (default: true)
   Group* setShowChildDetails(bool newVal);
   bool getShowChildDetails();
 
+  // Omit all structures in this group, including nested groups, from their usual location in the UI's structure lists
+  // (default: false)
   Group* setHideDescendantsFromStructureLists(bool newVal);
   bool getHideDescendantsFromStructureLists();
 
@@ -58,6 +61,9 @@ public:
   std::vector<WeakHandle<Group>> childrenGroups;
   std::vector<WeakHandle<Structure>> childrenStructures;
 
+  // === Deprecated
+  Group* getTopLevelGrandparent(); // deprecated, use getRootAncestor()
+
 protected:
   // = State
 
@@ -66,6 +72,9 @@ protected:
 
   // helpers
   void cullExpiredChildren(); // remove any child
+
+  // Adds all structures in this group, and recursively in its child groups, to the set
+  void collectDescendantStructures(std::unordered_set<Structure*>& structures);
 };
 
 
