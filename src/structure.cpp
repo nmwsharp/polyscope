@@ -26,7 +26,7 @@ Structure::Structure(std::string name_, std::string subtypeName_)
   validateName(name);
 }
 
-Structure::~Structure(){};
+Structure::~Structure() {};
 
 Structure* Structure::setEnabled(bool newEnabled) {
   if (newEnabled == isEnabled()) return this;
@@ -277,6 +277,11 @@ glm::vec3 Structure::getPosition() {
 }
 
 TransformationGizmo& Structure::getTransformGizmo() { return transformGizmo; }
+
+glm::vec3 Structure::worldToObjectPosition(glm::vec3 worldPos) {
+  glm::vec4 p = glm::inverse(objectTransform.get()) * glm::vec4(worldPos, 1.);
+  return glm::vec3(p) / p.w;
+}
 
 void Structure::resetTransform() {
   objectTransform = glm::mat4(1.0);

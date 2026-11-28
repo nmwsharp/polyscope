@@ -569,7 +569,7 @@ SparseVolumeGridPickResult SparseVolumeGrid::interpretPickResult(const PickResul
   result.cellFlatIndex = INVALID_IND_64;
   result.nodeIndex = glm::vec3{0, 0, 0};
 
-  glm::vec3 localPos = (rawResult.position - origin) / gridCellWidth;
+  glm::vec3 localPos = (worldToObjectPosition(rawResult.position) - origin) / gridCellWidth;
 
   // Find the cell index
   cellIndices.ensureHostBufferPopulated();

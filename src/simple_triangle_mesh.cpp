@@ -383,7 +383,7 @@ SimpleTriangleMeshPickResult SimpleTriangleMesh::interpretPickResult(const PickR
   // Each lambda_i is the area of the sub-triangle formed by the other two vertices and the click point P,
   // divided by the total.  Clamp each area to be nonneg and finite, then normalise. If the total is zero, fall back to
   // (1/3, 1/3, 1/3).
-  glm::vec3 P = rawResult.position;
+  glm::vec3 P = worldToObjectPosition(rawResult.position);
 
   auto subArea = [](glm::vec3 u, glm::vec3 v, glm::vec3 w) -> float {
     float a = glm::length(glm::cross(v - u, w - u));

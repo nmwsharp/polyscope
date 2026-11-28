@@ -112,6 +112,7 @@ public:
   glm::mat4x4 getTransform();
   glm::vec3 getPosition();
   TransformationGizmo& getTransformGizmo();
+  glm::vec3 worldToObjectPosition(glm::vec3 worldPos); // undo the object transform
 
   // = Length and bounding box
   // (returned in world coordinates, after the object transform is applied)

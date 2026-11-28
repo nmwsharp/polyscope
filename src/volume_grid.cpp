@@ -473,7 +473,7 @@ VolumeGridPickResult VolumeGrid::interpretPickResult(const PickResult& rawResult
 
   float nodePickRad = 0.8; // measured in a [-1,1] cube
 
-  glm::vec3 localPickPos = (rawResult.position - boundMin) / (boundMax - boundMin);
+  glm::vec3 localPickPos = (worldToObjectPosition(rawResult.position) - boundMin) / (boundMax - boundMin);
   localPickPos = clamp(localPickPos, glm::vec3(0.), glm::vec3(1.)); // on [0,1.]
 
   // NOTE: this logic is duplicated with shader

@@ -579,7 +579,7 @@ CurveNetworkPickResult CurveNetwork::interpretPickResult(const PickResult& rawRe
     int32_t iEnd = edgeTipInds.getValue(result.index);
     glm::vec3 pStart = nodePositions.getValue(iStart);
     glm::vec3 pEnd = nodePositions.getValue(iEnd);
-    result.tEdge = computeTValAlongLine(rawResult.position, pStart, pEnd);
+    result.tEdge = computeTValAlongLine(worldToObjectPosition(rawResult.position), pStart, pEnd);
   } else {
     exception("Bad pick index in curve network");
   }

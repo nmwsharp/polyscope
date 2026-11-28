@@ -1549,7 +1549,7 @@ SurfaceMeshPickResult SurfaceMesh::interpretPickResult(const PickResult& rawResu
       glm::vec3 pB = vertexPositions.getValue(vB);
       glm::vec3 pC = vertexPositions.getValue(vC);
       glm::vec3 normal = glm::normalize(glm::cross(pB - pA, pC - pA));
-      glm::vec3 x = projectToPlane(rawResult.position, normal, pA);
+      glm::vec3 x = projectToPlane(worldToObjectPosition(rawResult.position), normal, pA);
 
       // compute barycentric coordinates as ratio of signed areas
       float areaABC = signedTriangleArea(normal, pA, pB, pC);
