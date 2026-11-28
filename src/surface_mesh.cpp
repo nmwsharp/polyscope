@@ -543,9 +543,14 @@ void SurfaceMesh::computeVertexNormals() {
   for (size_t iF = 0; iF < nFaces(); iF++) {
     size_t start = faceIndsStart[iF];
     size_t D = faceIndsStart[iF + 1] - start;
+
+    // degenerate faces have NaN normals, skip them so they don't spread to the neighboring vertices
+    glm::vec3 fN = faceNormals.getHostValue(iF);
+    if (glm::any(glm::isnan(fN))) continue;
+
     for (size_t j = 0; j < D; j++) {
       size_t iV = faceIndsEntries[start + j];
-      vertexNormals.setHostValue(iV, vertexNormals.getHostValue(iV) + faceNormals.getHostValue(iF) * static_cast<float>(faceAreas.getHostValue(iF)));
+      vertexNormals.setHostValue(iV, vertexNormals.getHostValue(iV) + fN * static_cast<float>(faceAreas.getHostValue(iF)));
     }
   }
 
